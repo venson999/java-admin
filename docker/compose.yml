@@ -1,0 +1,37 @@
+services:
+  database:
+    image: mysql:8.4
+    container_name: admin-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: admin_db
+      MYSQL_USER: admin_user
+      MYSQL_PASSWORD: userpass
+      MYSQL_INITDB_SKIP_TZINFO: false
+      TZ: Asia/Shanghai
+    volumes:
+      - ./mysql/conf.d:/etc/mysql/conf.d
+      - ./mysql/initdb.d:/docker-entrypoint-initdb.d
+      - admin-mysql-data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    networks:
+      - admin-network
+
+  cache:
+    image: redis:8.0
+    container_name: admin-redis
+    volumes:
+      - ./redis/conf/redis.conf:/usr/local/etc/redis/redis.conf
+      - admin-redis-data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - admin-network
+
+volumes:
+  admin-mysql-data:
+  admin-redis-data:
+
+networks:
+  admin-network:
