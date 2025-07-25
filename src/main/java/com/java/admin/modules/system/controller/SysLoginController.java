@@ -20,7 +20,7 @@ public class SysLoginController {
         String token = sysLoginService.login(reqLoginUser.getUsername(), reqLoginUser.getPassword());
 
         if (token == null || token.isEmpty()) {
-            return Result.error("认证失败");
+            return Result.error(400, "认证失败");
         }
         return Result.success(token);
     }
