@@ -2,6 +2,7 @@ package com.java.admin.infrastructure.handler;
 
 import com.alibaba.fastjson2.JSON;
 import com.java.admin.common.model.Result;
+import com.java.admin.common.util.ServletUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -13,17 +14,13 @@ import java.io.IOException;
 
 @Component
 public class SecurityAccessDeniedHandler implements AccessDeniedHandler {
+
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response, AccessDeniedException accessDeniedException) throws IOException, ServletException {
 
         int code = 403;
         String path = request.getRequestURL().toString();
         String msg = STR."请求访问：\{path}，鉴权失败，无法访问系统资源";
-        String result = JSON.toJSONString(Result.error(code, msg));
-
-        response.setStatus(200);
-        response.setContentType("application/json");
-        response.setCharacterEncoding("utf-8");
-        response.getWriter().print(result);
+        ServletUtil.renderString(response, JSON.toJSONString(Result.error(code, msg)));
     }
 }

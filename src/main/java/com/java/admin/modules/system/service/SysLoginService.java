@@ -55,11 +55,4 @@ public class SysLoginService {
             return "";
         }
     }
-
-    public void logout() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        SecurityUserDetails user = (SecurityUserDetails) authentication.getPrincipal();
-        String userid = user.getUserid();
-        redisTemplate.delete("user:" + userid);
-    }
 }
