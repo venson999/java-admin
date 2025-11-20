@@ -26,7 +26,7 @@ public class SecurityLogoutSuccessHandler implements LogoutSuccessHandler {
 
         String token = request.getHeader("access_token");
         String userId = JwtUtil.parseClaims(token).getSubject();
-        redisTemplate.delete(STR."user:\{userId}");
+        redisTemplate.delete(String.format("user:%s", userId));
         ServletUtil.renderString(response, JSON.toJSONString(Result.success("登出成功")));
     }
 }

@@ -20,7 +20,7 @@ public class SecurityAuthenticationEntryPoint implements AuthenticationEntryPoin
 
         int code = 401;
         String path = request.getRequestURL().toString();
-        String msg = STR."请求访问：\{path}，认证失败，无法访问系统资源";
+        String msg = String.format("请求访问：%s，认证失败，无法访问系统资源", path);
         ServletUtil.renderString(response, JSON.toJSONString(Result.error(code, msg)));
     }
 }

@@ -20,7 +20,7 @@ public class SecurityAccessDeniedHandler implements AccessDeniedHandler {
 
         int code = 403;
         String path = request.getRequestURL().toString();
-        String msg = STR."请求访问：\{path}，鉴权失败，无法访问系统资源";
+        String msg = String.format("请求访问：%s，鉴权失败，无法访问系统资源", path);
         ServletUtil.renderString(response, JSON.toJSONString(Result.error(code, msg)));
     }
 }
