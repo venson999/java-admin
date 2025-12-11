@@ -1,8 +1,6 @@
 package com.java.admin.config;
 
 import com.java.admin.infrastructure.filter.JwtAuthenticationFilter;
-import com.java.admin.infrastructure.handler.SecurityAccessDeniedHandler;
-import com.java.admin.infrastructure.handler.SecurityAuthenticationEntryPoint;
 import com.java.admin.infrastructure.handler.SecurityLogoutSuccessHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -28,8 +26,6 @@ public class SecurityConfig {
 
     private final UserDetailsService userDetailsService;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final SecurityAuthenticationEntryPoint securityAuthenticationEntryPoint;
-    private final SecurityAccessDeniedHandler securityAccessDeniedHandler;
     private final SecurityLogoutSuccessHandler securityLogoutSuccessHandler;
 
     @Bean
@@ -37,16 +33,12 @@ public class SecurityConfig {
         http.authorizeHttpRequests(requests -> requests
                         .requestMatchers("/login").permitAll()
                         .anyRequest().authenticated())
-                .exceptionHandling(exception -> exception
-                        .authenticationEntryPoint(securityAuthenticationEntryPoint)
-                        .accessDeniedHandler(securityAccessDeniedHandler))
                 .addFilterBefore(jwtAuthenticationFilter, AuthorizationFilter.class)
                 .csrf(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .logout(logout -> logout
                         .logoutUrl("/logout")
-                        .logoutSuccessHandler(securityLogoutSuccessHandler)
-                        .permitAll())
+                        .logoutSuccessHandler(securityLogoutSuccessHandler))
                 .sessionManagement(AbstractHttpConfigurer::disable);
         return http.build();
     }

@@ -1,13 +1,12 @@
 package com.java.admin.modules.system.service;
 
-import com.java.admin.common.util.JwtUtil;
 import com.java.admin.infrastructure.model.SecurityUserDetails;
+import com.java.admin.infrastructure.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.TimeUnit;
@@ -23,36 +22,27 @@ public class SysLoginService {
 
         UsernamePasswordAuthenticationToken authRequest =
                 UsernamePasswordAuthenticationToken.unauthenticated(username, password);
-        try {
 
-            // authentication
-            Authentication authenticate = authenticationManager.authenticate(authRequest);
-            if (authenticate.isAuthenticated()) {
+        // Perform authentication
+        Authentication authentication = authenticationManager.authenticate(authRequest);
+        if (authentication.isAuthenticated()) {
 
-                // hold authentication info
-                SecurityContextHolder.getContext().setAuthentication(authenticate);
+            // Get user details
+            SecurityUserDetails userDetails = (SecurityUserDetails) authentication.getPrincipal();
 
-                // user detail
-                SecurityUserDetails userDetails = (SecurityUserDetails) authenticate.getPrincipal();
+            // Generate JWT token with 5 minutes validity
+            int tokenValidityMs = 1000 * 60 * 5;
+            String token = JwtUtil.createToken(userDetails.getUserid(), tokenValidityMs);
 
-                // jwt
-                String token = JwtUtil.createToken(
-                        userDetails.getUserid(),
-                        1000 * 60 * 5);
+            // Cache user details with 5 minutes validity
+            redisTemplate.opsForValue().set(
+                    "user:" + userDetails.getUserid(),
+                    userDetails,
+                    tokenValidityMs,
+                    TimeUnit.MILLISECONDS);
 
-                // cache user detail
-                redisTemplate.opsForValue().set(
-                        "user:" + userDetails.getUserid(),
-                        userDetails,
-                        1000 * 60 * 5,
-                        TimeUnit.MILLISECONDS);
-
-                return token;
-            }
-            return "";
-        } catch (Exception e) {
-            e.printStackTrace();
-            return "";
+            return token;
         }
+        return null;
     }
 }

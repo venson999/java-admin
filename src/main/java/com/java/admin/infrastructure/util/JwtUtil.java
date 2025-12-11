@@ -1,4 +1,4 @@
-package com.java.admin.common.util;
+package com.java.admin.infrastructure.util;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;

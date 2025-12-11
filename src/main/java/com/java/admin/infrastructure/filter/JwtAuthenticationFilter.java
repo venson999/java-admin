@@ -1,7 +1,9 @@
 package com.java.admin.infrastructure.filter;
 
-import com.java.admin.common.util.JwtUtil;
+import com.java.admin.infrastructure.constants.ErrorCode;
 import com.java.admin.infrastructure.model.SecurityUserDetails;
+import com.java.admin.infrastructure.util.JwtUtil;
+import com.java.admin.infrastructure.util.ServletUtil;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -9,7 +11,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -25,36 +26,45 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final RedisTemplate<String, Object> redisTemplate;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
 
+        // Skip login endpoint
         if ("/login".equals(request.getRequestURI())) {
             filterChain.doFilter(request, response);
             return;
         }
 
+        // Get JWT token
         String accessToken = request.getHeader("access_token");
         if (accessToken == null || accessToken.isEmpty()) {
-            throw new BadCredentialsException("token缺失");
+            ServletUtil.renderErrorResponse(response, ErrorCode.TOKEN_MISSING);
+            return;
         }
 
         String subject;
         try {
+            // Parse JWT token to get user identifier
             Claims claims = JwtUtil.parseClaims(accessToken);
             subject = claims.getSubject();
         } catch (Exception e) {
-            throw new BadCredentialsException("token错误");
+            ServletUtil.renderErrorResponse(response, ErrorCode.TOKEN_INVALID);
+            return;
         }
 
-        // get user detail from cache
+        // Get user details from cache
         SecurityUserDetails user = (SecurityUserDetails) redisTemplate.opsForValue().get("user:" + subject);
         if (user == null) {
-            throw new BadCredentialsException("token过期");
+            ServletUtil.renderErrorResponse(response, ErrorCode.TOKEN_EXPIRED);
+            return;
         }
 
-        // hold authentication
+        // Set user authentication info to Spring Security context
         Authentication authentication = new UsernamePasswordAuthenticationToken(
                 user, null, user.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        // Continue filter chain
         filterChain.doFilter(request, response);
     }
 }
