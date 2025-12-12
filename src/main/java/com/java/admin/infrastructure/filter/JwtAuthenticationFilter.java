@@ -29,8 +29,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
-        // Skip login endpoint
-        if ("/login".equals(request.getRequestURI())) {
+        // Skip login and logout endpoints
+        String requestURI = request.getRequestURI();
+        if ("/login".equals(requestURI) || "/logout".equals(requestURI)) {
             filterChain.doFilter(request, response);
             return;
         }

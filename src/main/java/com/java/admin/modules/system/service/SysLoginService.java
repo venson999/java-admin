@@ -3,6 +3,7 @@ package com.java.admin.modules.system.service;
 import com.java.admin.infrastructure.model.SecurityUserDetails;
 import com.java.admin.infrastructure.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.concurrent.TimeUnit;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SysLoginService {
@@ -44,5 +46,14 @@ public class SysLoginService {
             return token;
         }
         return null;
+    }
+
+    public void logout(String token) {
+        try {
+            String userId = JwtUtil.parseClaims(token).getSubject();
+            redisTemplate.delete(String.format("user:%s", userId));
+        } catch (Exception e) {
+            log.warn("Failed to process logout token", e);
+        }
     }
 }

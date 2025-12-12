@@ -1,7 +1,6 @@
 package com.java.admin.config;
 
 import com.java.admin.infrastructure.filter.JwtAuthenticationFilter;
-import com.java.admin.infrastructure.handler.SecurityLogoutSuccessHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -26,19 +25,16 @@ public class SecurityConfig {
 
     private final UserDetailsService userDetailsService;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final SecurityLogoutSuccessHandler securityLogoutSuccessHandler;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests(requests -> requests
-                        .requestMatchers("/login").permitAll()
+                        .requestMatchers("/login", "/logout").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, AuthorizationFilter.class)
                 .csrf(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
-                .logout(logout -> logout
-                        .logoutUrl("/logout")
-                        .logoutSuccessHandler(securityLogoutSuccessHandler))
+                .logout(AbstractHttpConfigurer::disable)
                 .sessionManagement(AbstractHttpConfigurer::disable);
         return http.build();
     }
