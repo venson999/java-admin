@@ -32,3 +32,6 @@ logging:
 
 server:
   port: 8000
+
+auth:
+  skip-paths: /login,/logout
