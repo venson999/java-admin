@@ -12,15 +12,16 @@ import org.springframework.stereotype.Service;
 
 import java.util.concurrent.TimeUnit;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class SysLoginService {
 
     private final AuthenticationManager authenticationManager;
     private final RedisTemplate<String, Object> redisTemplate;
 
     public String login(String username, String password) {
+        log.info("User login attempt - Username: {}", username);
 
         UsernamePasswordAuthenticationToken authRequest =
                 UsernamePasswordAuthenticationToken.unauthenticated(username, password);
@@ -43,8 +44,10 @@ public class SysLoginService {
                     tokenValidityMs,
                     TimeUnit.MILLISECONDS);
 
+            log.info("Operation [LOGIN] - User: {}, Success: true, Details: {}", userDetails.getUserid(), username);
             return token;
         }
+
         return null;
     }
 
@@ -52,8 +55,11 @@ public class SysLoginService {
         try {
             String userId = JwtUtil.parseClaims(token).getSubject();
             redisTemplate.delete(String.format("user:%s", userId));
+            log.info("Operation [LOGOUT] - User: {}, Success: true", userId);
         } catch (Exception e) {
-            log.warn("Failed to process logout token", e);
+            // 登出是幂等操作，即使 token 无效或 Redis 异常，也应视为成功
+            // 因为用户已无法使用当前 token 访问系统
+            log.warn("Logout completed with warning - Token may be invalid or already expired: {}", e.getMessage());
         }
     }
 }

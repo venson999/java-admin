@@ -2,6 +2,7 @@ package com.java.admin.config;
 
 import com.java.admin.infrastructure.filter.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,6 +23,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @Configuration
 @EnableMethodSecurity
 @RequiredArgsConstructor
+@Slf4j
 public class SecurityConfig {
 
     private final UserDetailsService userDetailsService;
@@ -32,6 +34,8 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        log.info("Configuring Spring Security - Skip paths: {}", (Object[]) skipPaths);
+
         http.authorizeHttpRequests(requests -> requests
                         .requestMatchers(skipPaths).permitAll()
                         .anyRequest().authenticated())
@@ -40,6 +44,8 @@ public class SecurityConfig {
                 .formLogin(AbstractHttpConfigurer::disable)
                 .logout(AbstractHttpConfigurer::disable)
                 .sessionManagement(AbstractHttpConfigurer::disable);
+
+        log.info("Spring Security configuration completed");
         return http.build();
     }
 
