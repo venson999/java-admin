@@ -1,5 +1,6 @@
 package com.java.admin.infrastructure.aspect;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -7,9 +8,6 @@ import org.aspectj.lang.annotation.Aspect;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
-
-import jakarta.servlet.http.HttpServletRequest;
-import java.util.Arrays;
 
 /**
  * Controller 请求日志切面
@@ -38,32 +36,30 @@ public class ControllerLogAspect {
         Object[] args = joinPoint.getArgs();
 
         // 记录请求信息 (DEBUG级别，避免过多日志)
-        log.debug("Request [{}] {} - Class: {}, Method: {}, Args: {}",
-            method, uri, className, methodName, Arrays.toString(args));
+        log.debug("Request started - Method: {}, URI: {}, Controller: {}, Action: {}, Args: {}",
+                method, uri, className, methodName, args);
 
         long start = System.currentTimeMillis();
         try {
             Object result = joinPoint.proceed();
-            long end = System.currentTimeMillis();
-            long cost = end - start;
+            long cost = System.currentTimeMillis() - start;
 
             // 记录成功响应
             if (cost > 1000) {
-                log.warn("Slow Response - {} {} - Cost: {}ms, Class: {}, Method: {}",
-                    method, uri, cost, className, methodName);
+                log.warn("Slow response - Method: {}, URI: {}, Cost: {}ms, Controller: {}, Action: {}",
+                        method, uri, cost, className, methodName);
             } else {
-                log.debug("Response [{}] {} - Cost: {}ms, Class: {}, Method: {}",
-                    method, uri, cost, className, methodName);
+                log.debug("Response completed - Method: {}, URI: {}, Cost: {}ms",
+                        method, uri, cost);
             }
 
             return result;
         } catch (Exception e) {
-            long end = System.currentTimeMillis();
-            long cost = end - start;
+            long cost = System.currentTimeMillis() - start;
 
             // 记录异常
-            log.error("Controller Exception - {} {} - Cost: {}ms, Error: {}",
-                method, uri, cost, e.getMessage(), e);
+            log.error("Controller exception - Method: {}, URI: {}, Cost: {}ms, Error: {}",
+                    method, uri, cost, e.getMessage(), e);
 
             throw e;
         }

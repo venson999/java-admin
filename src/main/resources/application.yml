@@ -29,4 +29,6 @@ server:
   port: 8000
 
 auth:
-  skip-paths: /login,/logout
+  skip-paths: /login
+  access-expire-millis: 300000
+  refresh-expire-millis: 604800000

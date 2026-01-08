@@ -1,16 +1,15 @@
 package com.java.admin.modules.system.service;
 
+import com.java.admin.config.AuthProperties;
 import com.java.admin.infrastructure.model.SecurityUserDetails;
 import com.java.admin.infrastructure.util.JwtUtil;
+import com.java.admin.modules.system.mapper.SessionMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
-
-import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -18,7 +17,8 @@ import java.util.concurrent.TimeUnit;
 public class SysLoginService {
 
     private final AuthenticationManager authenticationManager;
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final SessionMapper sessionMapper;
+    private final AuthProperties authProperties;
 
     public String login(String username, String password) {
         log.info("User login attempt - Username: {}", username);
@@ -33,33 +33,24 @@ public class SysLoginService {
             // Get user details
             SecurityUserDetails userDetails = (SecurityUserDetails) authentication.getPrincipal();
 
-            // Generate JWT token with 5 minutes validity
-            int tokenValidityMs = 1000 * 60 * 5;
-            String token = JwtUtil.createToken(userDetails.getUserid(), tokenValidityMs);
+            // Create access token
+            String token = JwtUtil.createToken(userDetails.getUserid(), authProperties.getAccessExpireMillis());
+            String tokenFingerprint = JwtUtil.parseClaims(token).getId();
 
-            // Cache user details with 5 minutes validity
-            redisTemplate.opsForValue().set(
-                    "user:" + userDetails.getUserid(),
-                    userDetails,
-                    tokenValidityMs,
-                    TimeUnit.MILLISECONDS);
+            // Save session
+            userDetails.setCurrentTokenFingerprint(tokenFingerprint);
+            sessionMapper.save(userDetails);
 
-            log.info("Operation [LOGIN] - User: {}, Success: true, Details: {}", userDetails.getUserid(), username);
+            log.info("Operation [LOGIN] - UserId: {}, Username: {}, Success: true, TokenFingerprint: {}",
+                    userDetails.getUserid(), username, tokenFingerprint);
             return token;
         }
 
         return null;
     }
 
-    public void logout(String token) {
-        try {
-            String userId = JwtUtil.parseClaims(token).getSubject();
-            redisTemplate.delete(String.format("user:%s", userId));
-            log.info("Operation [LOGOUT] - User: {}, Success: true", userId);
-        } catch (Exception e) {
-            // 登出是幂等操作，即使 token 无效或 Redis 异常，也应视为成功
-            // 因为用户已无法使用当前 token 访问系统
-            log.warn("Logout completed with warning - Token may be invalid or already expired: {}", e.getMessage());
-        }
+    public void revoke(String userId) {
+        sessionMapper.delete(userId);
+        log.info("Operation [REVOKE_SESSION] - UserId: {}, Success: true", userId);
     }
 }

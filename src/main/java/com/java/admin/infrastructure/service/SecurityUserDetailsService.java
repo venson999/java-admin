@@ -24,7 +24,7 @@ public class SecurityUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        log.debug("Loading user details - Username: {}", username);
+        log.debug("Loading user - Username: {}", username);
 
         SysUser sysUser = sysUserService.getUserByUsername(username);
         if (sysUser == null) {
@@ -34,7 +34,8 @@ public class SecurityUserDetailsService implements UserDetailsService {
 
         List<String> sysAuthorities = sysAuthoritiesMapper.selectAuthoritiesByUserId(sysUser.getUserId());
 
-        log.debug("User details loaded - Username: {}, Authorities: {}", username, sysAuthorities.size());
+        log.debug("User loaded - UserId: {}, Username: {}, AuthoritiesCount: {}",
+            sysUser.getUserId(), username, sysAuthorities.size());
         return new SecurityUserDetails(sysUser, sysAuthorities);
     }
 }

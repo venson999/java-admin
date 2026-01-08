@@ -34,7 +34,7 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        log.info("Configuring Spring Security - Skip paths: {}", (Object[]) skipPaths);
+        log.info("Spring Security configuration started - SkipPaths: {}", (Object[]) skipPaths);
 
         http.authorizeHttpRequests(requests -> requests
                         .requestMatchers(skipPaths).permitAll()

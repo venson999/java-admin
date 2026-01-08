@@ -18,9 +18,10 @@ public enum ErrorCode {
     // Authentication Errors (30000-39999)
     AUTHENTICATION_ERROR("30000", "认证失败", HttpStatus.UNAUTHORIZED),
     AUTHORIZATION_ERROR("30001", "权限不足", HttpStatus.FORBIDDEN),
-    TOKEN_EXPIRED("30002", "令牌已过期", HttpStatus.UNAUTHORIZED),
-    TOKEN_INVALID("30003", "令牌无效", HttpStatus.UNAUTHORIZED),
-    TOKEN_MISSING("30004", "令牌缺失", HttpStatus.UNAUTHORIZED);
+    TOKEN_INVALID("30002", "令牌无效", HttpStatus.UNAUTHORIZED),
+    TOKEN_MISSING("30003", "令牌缺失", HttpStatus.UNAUTHORIZED),
+    TOKEN_FINGERPRINT_MISMATCH("30004", "令牌指纹不匹配，可能已被使用", HttpStatus.UNAUTHORIZED),
+    SESSION_EXPIRED("30005", "会话已过期", HttpStatus.UNAUTHORIZED);
 
     private final String code;
     private final String message;

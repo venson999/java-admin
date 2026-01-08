@@ -20,7 +20,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<Result<Void>> handleAuthenticationException(AuthenticationException e, HttpServletRequest request) {
-        log.warn("Authentication failed - Path: {}, Method: {}, Error: {}",
+        log.warn("Authentication failed - URI: {}, Method: {}, Error: {}",
             request.getRequestURI(), request.getMethod(), e.getMessage());
 
         Result<Void> result = Result.error(ErrorCode.AUTHENTICATION_ERROR.getCode(), ErrorCode.AUTHENTICATION_ERROR.getMessage());
@@ -32,7 +32,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<Result<Void>> handleAccessDeniedException(AccessDeniedException e, HttpServletRequest request) {
-        log.warn("Access denied - Path: {}, Method: {}, Error: {}",
+        log.warn("Access denied - URI: {}, Method: {}, Error: {}",
             request.getRequestURI(), request.getMethod(), e.getMessage());
 
         Result<Void> result = Result.error(ErrorCode.AUTHORIZATION_ERROR.getCode(), ErrorCode.AUTHORIZATION_ERROR.getMessage());
@@ -44,8 +44,8 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(AppException.class)
     public ResponseEntity<Result<Void>> handleAppException(AppException e, HttpServletRequest request) {
-        log.warn("Business exception - Path: {}, Method: {}, Code: {}, Message: {}",
-            request.getRequestURI(), request.getMethod(), e.getErrorCode().getCode(), e.getErrorMessage());
+        log.warn("Business exception - Type: {}, Code: {}, Message: {}, URI: {}",
+            e.getClass().getSimpleName(), e.getErrorCode().getCode(), e.getErrorMessage(), request.getRequestURI());
 
         Result<Void> result = Result.error(e.getErrorCode().getCode(), e.getErrorMessage());
         return ResponseEntity.status(e.getHttpStatus()).body(result);
@@ -56,8 +56,8 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Result<Void>> handleException(Exception e, HttpServletRequest request) {
-        log.error("System exception - Path: {}, Method: {}, Error: {}",
-            request.getRequestURI(), request.getMethod(), e.getMessage(), e);
+        log.error("System exception - Type: {}, Message: {}, URI: {}",
+            e.getClass().getSimpleName(), e.getMessage(), request.getRequestURI(), e);
 
         Result<Void> result = Result.error(ErrorCode.SYSTEM_ERROR.getCode(), ErrorCode.SYSTEM_ERROR.getMessage());
         return ResponseEntity.status(ErrorCode.SYSTEM_ERROR.getHttpStatus()).body(result);
