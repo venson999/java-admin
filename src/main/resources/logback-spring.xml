@@ -1,23 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-    <!-- 默认配置 -->
+    <!-- Default configuration -->
     <property name="LOG_PATH" value="logs"/>
     <property name="LOG_FILE" value="${LOG_PATH}/admin"/>
     <property name="LOG_HISTORY" value="${LOG_PATH}/history"/>
     <property name="LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"/>
 
-    <!-- 控制台输出 (开发环境) -->
+    <!-- Console output (Development environment) -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>${LOG_PATTERN}</pattern>
         </encoder>
     </appender>
 
-    <!-- 主日志文件 -->
+    <!-- Main log file -->
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_FILE}.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <!-- 每天滚动，超过100MB也会滚动 -->
+            <!-- Roll daily and when file exceeds 100MB -->
             <fileNamePattern>${LOG_HISTORY}/admin.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
             <maxFileSize>100MB</maxFileSize>
             <maxHistory>30</maxHistory>
@@ -28,7 +28,7 @@
         </encoder>
     </appender>
 
-    <!-- 错误日志文件 (单独文件记录ERROR级别) -->
+    <!-- Error log file (Separate file for ERROR level logs) -->
     <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_FILE}-error.log</file>
         <filter class="ch.qos.logback.classic.filter.LevelFilter">
@@ -47,7 +47,7 @@
         </encoder>
     </appender>
 
-    <!-- 异步日志包装器 -->
+    <!-- Async log wrapper -->
     <appender name="ASYNC_FILE" class="ch.qos.logback.classic.AsyncAppender">
         <appender-ref ref="FILE"/>
         <queueSize>10000</queueSize>
@@ -64,7 +64,7 @@
         <includeCallerData>false</includeCallerData>
     </appender>
 
-    <!-- 开发环境配置 -->
+    <!-- Development environment configuration -->
     <springProfile name="dev">
         <root level="DEBUG">
             <appender-ref ref="CONSOLE"/>
@@ -72,34 +72,34 @@
             <appender-ref ref="ASYNC_ERROR_FILE"/>
         </root>
 
-        <!-- SQL 日志 -->
+        <!-- SQL logs -->
         <logger name="com.java.admin.modules.system.mapper" level="DEBUG"/>
         <logger name="org.apache.ibatis" level="DEBUG"/>
         <logger name="com.baomidou.mybatisplus" level="DEBUG"/>
 
-        <!-- 安全框架日志 -->
+        <!-- Security framework logs -->
         <logger name="org.springframework.security" level="DEBUG"/>
         <logger name="org.springframework.web" level="DEBUG"/>
     </springProfile>
 
-    <!-- 测试环境配置 -->
+    <!-- Test environment configuration -->
     <springProfile name="test">
         <root level="INFO">
             <appender-ref ref="ASYNC_FILE"/>
             <appender-ref ref="ASYNC_ERROR_FILE"/>
         </root>
 
-        <!-- SQL 日志 -->
+        <!-- SQL logs -->
         <logger name="com.java.admin.modules.system.mapper" level="INFO"/>
         <logger name="org.apache.ibatis" level="INFO"/>
         <logger name="com.baomidou.mybatisplus" level="INFO"/>
 
-        <!-- 安全框架日志 -->
+        <!-- Security framework logs -->
         <logger name="org.springframework.security" level="INFO"/>
         <logger name="org.springframework.web" level="INFO"/>
     </springProfile>
 
-    <!-- 生产环境配置 -->
+    <!-- Production environment configuration -->
     <springProfile name="prod">
         <root level="WARN">
             <appender-ref ref="ASYNC_FILE"/>
@@ -112,7 +112,7 @@
         <logger name="org.apache.ibatis" level="WARN"/>
     </springProfile>
 
-    <!-- 默认配置 (没有指定profile时) -->
+    <!-- Default configuration (when no profile is specified) -->
     <springProfile name="default">
         <root level="INFO">
             <appender-ref ref="CONSOLE"/>
