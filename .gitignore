@@ -31,3 +31,12 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### AI ###
+/.claude/
+/logs/
+/openspec/
+/CLAUDE.md
+/docs/
+/README.md
+/TESTING.md

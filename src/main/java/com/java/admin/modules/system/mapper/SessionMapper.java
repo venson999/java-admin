@@ -9,8 +9,8 @@ import org.springframework.stereotype.Component;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 会话数据访问层
- * 负责用户会话的 Redis CRUD 操作
+ * Session data access layer
+ * Responsible for Redis CRUD operations for user sessions
  */
 @Component
 @RequiredArgsConstructor
@@ -22,9 +22,9 @@ public class SessionMapper {
     private final AuthProperties authProperties;
 
     /**
-     * 保存用户会话
+     * Save user session
      *
-     * @param details 用户详情
+     * @param details User details
      */
     public void save(SecurityUserDetails details) {
         String key = buildKey(details.getUserid());
@@ -37,9 +37,9 @@ public class SessionMapper {
     }
 
     /**
-     * 删除用户会话
+     * Delete user session
      *
-     * @param userId 用户ID
+     * @param userId User ID
      */
     public void delete(String userId) {
         String key = buildKey(userId);
@@ -47,10 +47,10 @@ public class SessionMapper {
     }
 
     /**
-     * 查找用户会话
+     * Find user session
      *
-     * @param userId 用户ID
-     * @return 用户详情，不存在返回 null
+     * @param userId User ID
+     * @return User details, or null if not found
      */
     public SecurityUserDetails find(String userId) {
         String key = buildKey(userId);
@@ -58,9 +58,9 @@ public class SessionMapper {
     }
 
     /**
-     * 构建 Redis key
+     * Build Redis key
      *
-     * @param userId 用户ID
+     * @param userId User ID
      * @return Redis key
      */
     private String buildKey(String userId) {

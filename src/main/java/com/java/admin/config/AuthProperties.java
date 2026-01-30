@@ -10,12 +10,12 @@ import org.springframework.stereotype.Component;
 public class AuthProperties {
 
     /**
-     * Access token 过期时间(毫秒)
+     * Access token expiration time (milliseconds)
      */
     private long accessExpireMillis;
 
     /**
-     * 会话过期时间(毫秒)
+     * Session expiration time (milliseconds)
      */
     private long refreshExpireMillis;
 }

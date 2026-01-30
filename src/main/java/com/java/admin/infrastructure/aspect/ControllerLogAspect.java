@@ -10,8 +10,8 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 /**
- * Controller 请求日志切面
- * 自动记录所有 Controller 方法的请求和响应信息
+ * Controller request logging aspect
+ * Automatically logs request and response information for all Controller methods
  */
 @Aspect
 @Component
@@ -19,7 +19,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 public class ControllerLogAspect {
 
     /**
-     * 环绕通知：记录 Controller 方法的请求和响应日志
+     * Around advice: Logs request and response for Controller methods
      */
     @Around("execution(* com.java.admin.modules.system.controller..*(..))")
     public Object logController(ProceedingJoinPoint joinPoint) throws Throwable {
@@ -35,7 +35,7 @@ public class ControllerLogAspect {
         String methodName = joinPoint.getSignature().getName();
         Object[] args = joinPoint.getArgs();
 
-        // 记录请求信息 (DEBUG级别，避免过多日志)
+        // Log request information (DEBUG level to avoid excessive logs)
         log.debug("Request started - Method: {}, URI: {}, Controller: {}, Action: {}, Args: {}",
                 method, uri, className, methodName, args);
 
@@ -44,7 +44,7 @@ public class ControllerLogAspect {
             Object result = joinPoint.proceed();
             long cost = System.currentTimeMillis() - start;
 
-            // 记录成功响应
+            // Log successful response
             if (cost > 1000) {
                 log.warn("Slow response - Method: {}, URI: {}, Cost: {}ms, Controller: {}, Action: {}",
                         method, uri, cost, className, methodName);
@@ -57,7 +57,7 @@ public class ControllerLogAspect {
         } catch (Exception e) {
             long cost = System.currentTimeMillis() - start;
 
-            // 记录异常
+            // Log exception
             log.error("Controller exception - Method: {}, URI: {}, Cost: {}ms, Error: {}",
                     method, uri, cost, e.getMessage(), e);
 

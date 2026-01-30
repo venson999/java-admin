@@ -15,13 +15,13 @@ import org.springframework.http.HttpStatus;
  * throw new AppException(ErrorCode.BUSINESS_ERROR);
  *
  * // Exception with custom message
- * throw new AppException(ErrorCode.AUTHENTICATION_ERROR, "用户名或密码错误");
+ * throw new AppException(ErrorCode.AUTHENTICATION_ERROR, "Invalid username or password");
  *
  * // Exception with cause
  * throw new AppException(ErrorCode.SYSTEM_ERROR, throwable);
  *
  * // Exception with custom message and cause
- * throw new AppException(ErrorCode.SYSTEM_ERROR, "系统错误", throwable);
+ * throw new AppException(ErrorCode.SYSTEM_ERROR, "System error", throwable);
  * </pre>
  */
 @Getter
