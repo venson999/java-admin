@@ -22,6 +22,7 @@
         <druid.version>1.2.27</druid.version>
         <mybatis-plus.version>3.5.16</mybatis-plus.version>
         <fastjson2.version>2.0.60</fastjson2.version>
+        <springdoc.version>2.8.15</springdoc.version>
     </properties>
 
     <dependencies>
@@ -62,6 +63,13 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-aop</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>${springdoc.version}</version>
+            <scope>compile</scope>
         </dependency>
 
         <dependency>
@@ -124,8 +132,8 @@
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
                         </exclude>
-                        <excludeDevtools>true</excludeDevtools>
                     </excludes>
+                    <excludeDevtools>true</excludeDevtools>
                 </configuration>
             </plugin>
             <plugin>
@@ -177,8 +185,8 @@
                                 <rule>
                                     <element>PACKAGE</element>
                                     <excludes>
-                                        <exclude>*.*Config</exclude>
-                                        <exclude>*.*Application</exclude>
+                                        <exclude>com.java.admin.config</exclude>
+                                        <exclude>com.java.admin</exclude>
                                     </excludes>
                                     <limits>
                                         <limit>

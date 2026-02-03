@@ -29,6 +29,6 @@ server:
   port: 8000
 
 auth:
-  skip-paths: /login
+  skip-paths: /login,/swagger-ui/index.html,/swagger-ui/**,/v3/api-docs/**
   access-expire-millis: 300000
   refresh-expire-millis: 604800000

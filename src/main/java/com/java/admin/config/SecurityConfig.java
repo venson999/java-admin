@@ -3,7 +3,6 @@ package com.java.admin.config;
 import com.java.admin.infrastructure.filter.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -28,16 +27,14 @@ public class SecurityConfig {
 
     private final UserDetailsService userDetailsService;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-
-    @Value("${auth.skip-paths}")
-    private String[] skipPaths;
+    private final AuthProperties authProperties;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        log.info("Spring Security configuration started - SkipPaths: {}", (Object[]) skipPaths);
+        log.info("Spring Security configuration started - SkipPaths: {}", authProperties.getSkipPaths());
 
         http.authorizeHttpRequests(requests -> requests
-                        .requestMatchers(skipPaths).permitAll()
+                        .requestMatchers(authProperties.getSkipPaths().toArray(String[]::new)).permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, AuthorizationFilter.class)
                 .csrf(AbstractHttpConfigurer::disable)

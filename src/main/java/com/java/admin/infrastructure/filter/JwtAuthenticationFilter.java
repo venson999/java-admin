@@ -14,14 +14,13 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
@@ -30,9 +29,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final SessionMapper sessionMapper;
     private final AuthProperties authProperties;
+    private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
-    @Value("${auth.skip-paths}")
-    private Set<String> skipPaths;
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String requestURI = request.getRequestURI();
+        // Skip authentication for configured paths
+        return authProperties.getSkipPaths().stream()
+                .anyMatch(skipPath -> pathMatcher.match(skipPath, requestURI));
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -40,13 +45,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String requestURI = request.getRequestURI();
         log.debug("Authentication filter started - URI: {}", requestURI);
-
-        // Skip configured paths
-        if (skipPaths.contains(requestURI)) {
-            log.debug("Skip authentication - URI: {}", requestURI);
-            filterChain.doFilter(request, response);
-            return;
-        }
 
         // Get access token
         String accessToken = request.getHeader("access_token");

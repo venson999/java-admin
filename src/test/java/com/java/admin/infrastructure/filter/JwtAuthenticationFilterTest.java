@@ -24,7 +24,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.Set;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
@@ -77,8 +77,9 @@ class JwtAuthenticationFilterTest extends AbstractMockTest {
     void setUp() throws IOException {
         filter = new JwtAuthenticationFilter(sessionMapper, authProperties);
 
-        // Set skipPaths (using reflection to set private field)
-        setSkipPaths(Set.of(SKIP_URI, "/api/public", "/api/register"));
+        // Configure skip paths mock
+        when(authProperties.getSkipPaths())
+                .thenReturn(List.of(SKIP_URI, "/api/public", "/api/register"));
 
         // Initialize Mock objects
         mockedJwtUtil = mockStatic(JwtUtil.class);
@@ -102,8 +103,8 @@ class JwtAuthenticationFilterTest extends AbstractMockTest {
         // Given
         when(request.getRequestURI()).thenReturn(SKIP_URI);
 
-        // When
-        filter.doFilterInternal(request, response, filterChain);
+        // When - Use doFilter() instead of doFilterInternal() to test the complete filter behavior
+        filter.doFilter(request, response, filterChain);
 
         // Then
         verify(filterChain, times(1)).doFilter(request, response);
@@ -122,8 +123,8 @@ class JwtAuthenticationFilterTest extends AbstractMockTest {
             when(response.getWriter()).thenReturn(writer);
             when(request.getRequestURI()).thenReturn(uri);
 
-            // When
-            filter.doFilterInternal(request, response, filterChain);
+            // When - Use doFilter() instead of doFilterInternal()
+            filter.doFilter(request, response, filterChain);
 
             // Then
             verify(filterChain, times(1)).doFilter(request, response);
@@ -483,18 +484,5 @@ class JwtAuthenticationFilterTest extends AbstractMockTest {
         verify(sessionMapper).find(customUserId);
         assertThat(SecurityContextHolder.getContext().getAuthentication().getPrincipal())
                 .isEqualTo(userDetails);
-    }
-
-    /**
-     * Set skipPaths private field using reflection
-     */
-    private void setSkipPaths(Set<String> paths) {
-        try {
-            java.lang.reflect.Field field = JwtAuthenticationFilter.class.getDeclaredField("skipPaths");
-            field.setAccessible(true);
-            field.set(filter, paths);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException("Failed to set skipPaths via reflection", e);
-        }
     }
 }
