@@ -1,5 +1,7 @@
 package com.java.admin.modules.system.service;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.java.admin.modules.system.mapper.SysUserMapper;
 import com.java.admin.modules.system.model.SysUser;
 import com.java.admin.testutil.AbstractMockTest;
@@ -9,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
+import java.util.List;
 import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -21,6 +24,7 @@ import static org.mockito.Mockito.*;
  * <p>Test Coverage:
  * <ul>
  *   <li>User query functionality</li>
+ *   <li>User pagination functionality</li>
  *   <li>Database interaction verification</li>
  *   <li>Log output verification</li>
  * </ul>
@@ -244,5 +248,182 @@ class SysUserServiceTest extends AbstractMockTest {
 
         // Then
         verify(sysUserMapper, never()).selectList(any());
+    }
+
+    @Test
+    @DisplayName("Should return paginated user list successfully")
+    void shouldReturnPaginatedUserList() {
+        // Given
+        int page = 1;
+        int size = 10;
+        String username = null;
+
+        Page<SysUser> mockPage = new Page<>(page, size);
+        mockPage.setRecords(List.of(
+                TestDataFactory.createDefaultUser(),
+                TestDataFactory.createAdminUser()
+        ));
+        mockPage.setTotal(2);
+
+        when(sysUserMapper.selectPage(any(), any()))
+                .thenReturn(mockPage);
+
+        // When
+        IPage<SysUser> result = sysUserService.pageUsers(page - 1, size, username);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getRecords()).hasSize(2);
+        assertThat(result.getTotal()).isEqualTo(2);
+        assertThat(result.getCurrent()).isEqualTo(page);
+        assertThat(result.getSize()).isEqualTo(size);
+
+        verify(sysUserMapper, times(1)).selectPage(any(), any());
+    }
+
+    @Test
+    @DisplayName("Should filter users by username when provided")
+    void shouldFilterUsersByUsername() {
+        // Given
+        int page = 0;
+        int size = 10;
+        String username = "admin";
+
+        Page<SysUser> mockPage = new Page<>(page, size);
+        mockPage.setRecords(List.of(TestDataFactory.createAdminUser()));
+        mockPage.setTotal(1);
+
+        when(sysUserMapper.selectPage(any(), any()))
+                .thenReturn(mockPage);
+
+        // When
+        IPage<SysUser> result = sysUserService.pageUsers(page, size, username);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getRecords()).hasSize(1);
+        assertThat(result.getRecords().get(0).getUserName()).isEqualTo("admin");
+
+        verify(sysUserMapper, times(1)).selectPage(any(), any());
+    }
+
+    @Test
+    @DisplayName("Should return empty page when no users match")
+    void shouldReturnEmptyPageWhenNoUsers() {
+        // Given
+        int page = 0;
+        int size = 10;
+        String username = "nonexistent";
+
+        Page<SysUser> mockPage = new Page<>(page, size);
+        mockPage.setRecords(List.of());
+        mockPage.setTotal(0);
+
+        when(sysUserMapper.selectPage(any(), any()))
+                .thenReturn(mockPage);
+
+        // When
+        IPage<SysUser> result = sysUserService.pageUsers(page, size, username);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getRecords()).isEmpty();
+        assertThat(result.getTotal()).isEqualTo(0);
+
+        verify(sysUserMapper, times(1)).selectPage(any(), any());
+    }
+
+    @Test
+    @DisplayName("Should handle different page sizes")
+    void shouldHandleDifferentPageSizes() {
+        // Given
+        int page = 0;
+        int size = 20;
+
+        Page<SysUser> mockPage = new Page<>(page, size);
+        mockPage.setRecords(List.of(TestDataFactory.createDefaultUser()));
+        mockPage.setTotal(1);
+
+        when(sysUserMapper.selectPage(any(), any()))
+                .thenReturn(mockPage);
+
+        // When
+        IPage<SysUser> result = sysUserService.pageUsers(page, size, null);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getSize()).isEqualTo(size);
+
+        verify(sysUserMapper, times(1)).selectPage(any(), any());
+    }
+
+    @Test
+    @DisplayName("Should handle different page numbers")
+    void shouldHandleDifferentPageNumbers() {
+        // Given
+        int page = 2;
+        int size = 10;
+
+        Page<SysUser> mockPage = new Page<>(page, size);
+        mockPage.setRecords(List.of(TestDataFactory.createDefaultUser()));
+        mockPage.setTotal(25);
+
+        when(sysUserMapper.selectPage(any(), any()))
+                .thenReturn(mockPage);
+
+        // When
+        IPage<SysUser> result = sysUserService.pageUsers(page, size, null);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getCurrent()).isEqualTo(page);
+
+        verify(sysUserMapper, times(1)).selectPage(any(), any());
+    }
+
+    @Test
+    @DisplayName("Should handle pagination with multiple users")
+    void shouldHandlePaginationWithMultipleUsers() {
+        // Given
+        int page = 0;
+        int size = 10;
+
+        Page<SysUser> mockPage = new Page<>(page, size);
+        mockPage.setRecords(List.of(
+                TestDataFactory.createUserWithUsername("user1"),
+                TestDataFactory.createUserWithUsername("user2"),
+                TestDataFactory.createUserWithUsername("user3"),
+                TestDataFactory.createUserWithUsername("user4"),
+                TestDataFactory.createUserWithUsername("user5")
+        ));
+        mockPage.setTotal(5);
+
+        when(sysUserMapper.selectPage(any(), any()))
+                .thenReturn(mockPage);
+
+        // When
+        IPage<SysUser> result = sysUserService.pageUsers(page, size, null);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getRecords()).hasSize(5);
+        assertThat(result.getTotal()).isEqualTo(5);
+
+        verify(sysUserMapper, times(1)).selectPage(any(), any());
+    }
+
+    @Test
+    @DisplayName("Should propagate exception from mapper during pagination")
+    void shouldPropagateExceptionDuringPagination() {
+        // Given
+        when(sysUserMapper.selectPage(any(), any()))
+                .thenThrow(new RuntimeException("Database error"));
+
+        // When & Then
+        assertThatThrownBy(() -> sysUserService.pageUsers(0, 10, null))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Database error");
+
+        verify(sysUserMapper, times(1)).selectPage(any(), any());
     }
 }
