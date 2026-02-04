@@ -6,14 +6,21 @@ create table sys_user (
   user_id           bigint(20)      not null auto_increment    comment '用户ID',
   user_name         varchar(30)     not null                   comment '用户账号',
   password          varchar(100)    default ''                 comment '密码',
-  primary key (user_id)
+  email             varchar(255)    default null               comment '邮箱',
+  created_at        datetime        default current_timestamp  comment '创建时间',
+  updated_at        datetime        default current_timestamp on update current_timestamp  comment '更新时间',
+  created_by        bigint(20)      default null               comment '创建人',
+  updated_by        bigint(20)      default null               comment '更新人',
+  deleted           tinyint(1)      default 0                  comment '删除标记（0-正常，1-删除）',
+  primary key (user_id),
+  unique key uk_username (user_name)
 ) engine=innodb auto_increment=100 comment = '用户信息表';
 
 -- ----------------------------
 -- 初始化-用户信息表数据
 -- ----------------------------
-insert into sys_user values(1, 'admin', '$2a$10$rzvwIEtaoGJ/rJyuES1iL.zn42G2vHmjfeXrZXuArrUgIR/8SKHSG');
-insert into sys_user values(2, 'user',  '$2a$10$rzvwIEtaoGJ/rJyuES1iL.zn42G2vHmjfeXrZXuArrUgIR/8SKHSG');
+insert into sys_user (user_id, user_name, password, email) values(1, 'admin', '$2a$10$rzvwIEtaoGJ/rJyuES1iL.zn42G2vHmjfeXrZXuArrUgIR/8SKHSG', 'admin@example.com');
+insert into sys_user (user_id, user_name, password, email) values(2, 'user',  '$2a$10$rzvwIEtaoGJ/rJyuES1iL.zn42G2vHmjfeXrZXuArrUgIR/8SKHSG', 'user@example.com');
 
 -- ----------------------------
 -- 角色信息表
