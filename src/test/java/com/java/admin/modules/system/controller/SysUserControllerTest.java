@@ -313,4 +313,7 @@ class SysUserControllerTest extends AbstractMockTest {
 
         verify(sysUserService).pageUsers(0, 10, "");
     }
+
+    // Note: Tests for getUserById endpoint require integration testing with Spring Security context
+    // These tests should be added in a separate integration test class
 }
