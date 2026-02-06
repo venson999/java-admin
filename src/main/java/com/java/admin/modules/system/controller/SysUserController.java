@@ -12,10 +12,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/users")
@@ -57,6 +54,28 @@ public class SysUserController {
         log.info("Page users request - Page: {}, Size: {}, Username: {}", page, size, username);
         Page<SysUser> result = sysUserService.pageUsers(page, size, username);
         log.info("Page users success - Total: {}", result.getTotal());
+        return Result.success(result);
+    }
+
+    /**
+     * Get user by ID (ADMIN or self)
+     */
+    @GetMapping("/{id}")
+    @PreAuthorize("@perm.canAccess(authentication, #id)")
+    @Operation(summary = "Get user by ID", description = "Get user details by ID (ADMIN or self)")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "User retrieved successfully"),
+            @ApiResponse(responseCode = "403", description = "Forbidden - not authorized"),
+            @ApiResponse(responseCode = "404", description = "User not found")
+    })
+    public Result<SysUser> getUserById(
+            @Parameter(description = "User ID")
+            @PathVariable String id) {
+
+        log.info("Get user by ID request - User ID: {}", id);
+
+        SysUser result = sysUserService.getUserById(id);
+        log.info("Get user by ID success - User ID: {}, Username: {}", id, result.getUserName());
         return Result.success(result);
     }
 }

@@ -254,9 +254,9 @@ class SysUserServiceTest extends AbstractMockTest {
     @DisplayName("Should return paginated user list successfully")
     void shouldReturnPaginatedUserList() {
         // Given
-        int page = 1;
+        int page = 1;  // 1-based page number from frontend
+        int zeroBasedPage = 0;  // Converted to 0-based for MyBatis Plus
         int size = 10;
-        String username = null;
 
         Page<SysUser> mockPage = new Page<>(page, size);
         mockPage.setRecords(List.of(
@@ -269,13 +269,13 @@ class SysUserServiceTest extends AbstractMockTest {
                 .thenReturn(mockPage);
 
         // When
-        IPage<SysUser> result = sysUserService.pageUsers(page - 1, size, username);
+        IPage<SysUser> result = sysUserService.pageUsers(zeroBasedPage, size, null);
 
         // Then
         assertThat(result).isNotNull();
         assertThat(result.getRecords()).hasSize(2);
         assertThat(result.getTotal()).isEqualTo(2);
-        assertThat(result.getCurrent()).isEqualTo(page);
+        assertThat(result.getCurrent()).isEqualTo(page);  // Returns the original page from frontend
         assertThat(result.getSize()).isEqualTo(size);
 
         verify(sysUserMapper, times(1)).selectPage(any(), any());
@@ -425,5 +425,42 @@ class SysUserServiceTest extends AbstractMockTest {
                 .hasMessageContaining("Database error");
 
         verify(sysUserMapper, times(1)).selectPage(any(), any());
+    }
+
+    @Test
+    @DisplayName("Should return user entity when user exists by ID")
+    void shouldReturnUserEntityWhenExistsById() {
+        // Given
+        String userId = "123";
+        SysUser user = TestDataFactory.createDefaultUser();
+        user.setUserId(userId);
+
+        when(sysUserMapper.selectById(userId)).thenReturn(user);
+
+        // When
+        SysUser result = sysUserService.getUserById(userId);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getUserId()).isEqualTo(userId);
+        assertThat(result.getUserName()).isEqualTo(user.getUserName());
+        assertThat(result.getEmail()).isEqualTo(user.getEmail());
+
+        verify(sysUserMapper, times(1)).selectById(userId);
+    }
+
+    @Test
+    @DisplayName("Should throw exception when user not found by ID")
+    void shouldThrowExceptionWhenUserNotFoundById() {
+        // Given
+        String userId = "999";
+        when(sysUserMapper.selectById(userId)).thenReturn(null);
+
+        // When & Then
+        assertThatThrownBy(() -> sysUserService.getUserById(userId))
+                .isInstanceOf(com.java.admin.infrastructure.exception.AppException.class)
+                .hasMessageContaining("User not found");
+
+        verify(sysUserMapper, times(1)).selectById(userId);
     }
 }

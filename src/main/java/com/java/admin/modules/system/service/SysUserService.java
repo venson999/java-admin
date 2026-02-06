@@ -3,6 +3,8 @@ package com.java.admin.modules.system.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.java.admin.infrastructure.exception.AppException;
+import com.java.admin.infrastructure.constants.ErrorCode;
 import com.java.admin.modules.system.mapper.SysUserMapper;
 import com.java.admin.modules.system.model.SysUser;
 import lombok.RequiredArgsConstructor;
@@ -52,5 +54,27 @@ public class SysUserService {
 
         log.debug("Page users completed - Total: {}, Records: {}", userPage.getTotal(), userPage.getRecords().size());
         return userPage;
+    }
+
+    /**
+     * Query user by ID
+     *
+     * @param userId User ID
+     * @return User entity
+     * @throws AppException if user not found
+     */
+    public SysUser getUserById(String userId) {
+        log.debug("Get user by ID started - User ID: {}", userId);
+
+        // Query user (automatically filters deleted=1 due to @TableLogic)
+        SysUser user = sysUserMapper.selectById(userId);
+
+        if (user == null) {
+            log.warn("User not found - User ID: {}", userId);
+            throw new AppException(ErrorCode.DATA_NOT_FOUND, "User not found");
+        }
+
+        log.debug("Get user by ID completed - User ID: {}, Username: {}", userId, user.getUserName());
+        return user;
     }
 }
