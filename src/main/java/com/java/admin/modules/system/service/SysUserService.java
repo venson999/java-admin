@@ -22,6 +22,19 @@ public class SysUserService {
     private final SysUserMapper sysUserMapper;
     private final PasswordEncoder passwordEncoder;
 
+    /**
+     * Escape special characters in username for safe LIKE query
+     * Escapes % and _ which are wildcards in SQL LIKE clauses
+     *
+     * @param username the username to escape
+     * @return escaped username safe for LIKE queries
+     */
+    private String escapeUsernameForLike(String username) {
+        return username.replace("\\", "\\\\")
+                .replace("%", "\\%")
+                .replace("_", "\\_");
+    }
+
     public SysUser getUserByUsername(String userName) {
         log.debug("Query user by username started - Username: {}", userName);
         LambdaQueryWrapper<SysUser> queryWrapper = Wrappers.lambdaQuery();
@@ -48,7 +61,9 @@ public class SysUserService {
         // Build query conditions
         LambdaQueryWrapper<SysUser> queryWrapper = Wrappers.lambdaQuery();
         if (StringUtils.hasText(username)) {
-            queryWrapper.like(SysUser::getUserName, username);
+            // Escape special characters to prevent SQL injection in LIKE queries
+            String escapedUsername = escapeUsernameForLike(username);
+            queryWrapper.like(SysUser::getUserName, escapedUsername);
         }
         // @TableLogic annotation automatically filters deleted=1 records
 
