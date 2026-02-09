@@ -14,6 +14,7 @@ public enum ErrorCode {
     BUSINESS_ERROR("20000", "Business logic error", HttpStatus.BAD_REQUEST),
     PARAM_VALIDATION_ERROR("20001", "Parameter validation failed", HttpStatus.BAD_REQUEST),
     DATA_NOT_FOUND("20002", "Data not found", HttpStatus.NOT_FOUND),
+    USERNAME_ALREADY_EXISTS("20003", "Username already exists", HttpStatus.BAD_REQUEST),
 
     // Authentication Errors (30000-39999)
     AUTHENTICATION_ERROR("30000", "Authentication failed", HttpStatus.UNAUTHORIZED),

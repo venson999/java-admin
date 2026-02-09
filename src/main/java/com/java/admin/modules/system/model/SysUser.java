@@ -13,7 +13,6 @@ public class SysUser {
     @TableId
     private String userId;
     private String userName;
-    @TableField(select = false)
     @JsonIgnore
     private String password;
     private String email;

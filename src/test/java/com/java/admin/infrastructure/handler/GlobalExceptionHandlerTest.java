@@ -5,15 +5,23 @@ import com.java.admin.infrastructure.exception.AppException;
 import com.java.admin.infrastructure.model.Result;
 import com.java.admin.testutil.AbstractMockTest;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.springframework.core.MethodParameter;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -41,6 +49,9 @@ class GlobalExceptionHandlerTest extends AbstractMockTest {
     @Mock
     private HttpServletRequest request;
 
+    @Mock
+    private BindingResult bindingResult;
+
     @BeforeEach
     void setUp() {
         when(request.getRequestURI()).thenReturn("/api/test");
@@ -60,8 +71,10 @@ class GlobalExceptionHandlerTest extends AbstractMockTest {
         // Then
         assertThat(response).isNotNull();
         assertThat(response.getStatusCode().value()).isEqualTo(401);
-        assertThat(response.getBody().getCode()).isEqualTo("30000");
-        assertThat(response.getBody().getMsg()).isEqualTo("Authentication failed");
+        assertThat(response.getBody())
+                .isNotNull()
+                .extracting(Result::getCode, Result::getMsg)
+                .containsExactly("30000", "Authentication failed");
     }
 
     @Test
@@ -79,9 +92,15 @@ class GlobalExceptionHandlerTest extends AbstractMockTest {
 
         // Then
         assertThat(response1.getStatusCode().value()).isEqualTo(401);
-        assertThat(response1.getBody().getCode()).isEqualTo("30000");
+        assertThat(response1.getBody())
+                .isNotNull()
+                .extracting(Result::getCode)
+                .isEqualTo("30000");
         assertThat(response2.getStatusCode().value()).isEqualTo(401);
-        assertThat(response2.getBody().getCode()).isEqualTo("30000");
+        assertThat(response2.getBody())
+                .isNotNull()
+                .extracting(Result::getCode)
+                .isEqualTo("30000");
     }
 
     @Test
@@ -97,8 +116,10 @@ class GlobalExceptionHandlerTest extends AbstractMockTest {
         // Then
         assertThat(response).isNotNull();
         assertThat(response.getStatusCode().value()).isEqualTo(403);
-        assertThat(response.getBody().getCode()).isEqualTo("30001");
-        assertThat(response.getBody().getMsg()).isEqualTo("Insufficient permissions");
+        assertThat(response.getBody())
+                .isNotNull()
+                .extracting(Result::getCode, Result::getMsg)
+                .containsExactly("30001", "Insufficient permissions");
     }
 
     @Test
@@ -113,7 +134,10 @@ class GlobalExceptionHandlerTest extends AbstractMockTest {
 
         // Then
         assertThat(response.getStatusCode().value()).isEqualTo(403);
-        assertThat(response.getBody().getCode()).isEqualTo("30001");
+        assertThat(response.getBody())
+                .isNotNull()
+                .extracting(Result::getCode)
+                .isEqualTo("30001");
     }
 
     @Test
@@ -129,8 +153,10 @@ class GlobalExceptionHandlerTest extends AbstractMockTest {
         // Then
         assertThat(response).isNotNull();
         assertThat(response.getStatusCode().value()).isEqualTo(400);
-        assertThat(response.getBody().getCode()).isEqualTo("20000");
-        assertThat(response.getBody().getMsg()).isEqualTo("Business logic error");
+        assertThat(response.getBody())
+                .isNotNull()
+                .extracting(Result::getCode, Result::getMsg)
+                .containsExactly("20000", "Business logic error");
     }
 
     @Test
@@ -146,8 +172,10 @@ class GlobalExceptionHandlerTest extends AbstractMockTest {
 
         // Then
         assertThat(response.getStatusCode().value()).isEqualTo(400);
-        assertThat(response.getBody().getCode()).isEqualTo("20000");
-        assertThat(response.getBody().getMsg()).isEqualTo(customMessage);
+        assertThat(response.getBody())
+                .isNotNull()
+                .extracting(Result::getCode, Result::getMsg)
+                .containsExactly("20000", customMessage);
     }
 
     @Test
@@ -162,8 +190,10 @@ class GlobalExceptionHandlerTest extends AbstractMockTest {
 
         // Then
         assertThat(response.getStatusCode().value()).isEqualTo(400);
-        assertThat(response.getBody().getCode()).isEqualTo("20001");
-        assertThat(response.getBody().getMsg()).isEqualTo("Parameter validation failed");
+        assertThat(response.getBody())
+                .isNotNull()
+                .extracting(Result::getCode, Result::getMsg)
+                .containsExactly("20001", "Parameter validation failed");
     }
 
     @Test
@@ -178,8 +208,10 @@ class GlobalExceptionHandlerTest extends AbstractMockTest {
 
         // Then
         assertThat(response.getStatusCode().value()).isEqualTo(404);
-        assertThat(response.getBody().getCode()).isEqualTo("20002");
-        assertThat(response.getBody().getMsg()).isEqualTo("Data not found");
+        assertThat(response.getBody())
+                .isNotNull()
+                .extracting(Result::getCode, Result::getMsg)
+                .containsExactly("20002", "Data not found");
     }
 
     @Test
@@ -195,8 +227,10 @@ class GlobalExceptionHandlerTest extends AbstractMockTest {
         // Then
         assertThat(response).isNotNull();
         assertThat(response.getStatusCode().value()).isEqualTo(500);
-        assertThat(response.getBody().getCode()).isEqualTo("10000");
-        assertThat(response.getBody().getMsg()).isEqualTo("Internal system error");
+        assertThat(response.getBody())
+                .isNotNull()
+                .extracting(Result::getCode, Result::getMsg)
+                .containsExactly("10000", "Internal system error");
     }
 
     @Test
@@ -211,8 +245,10 @@ class GlobalExceptionHandlerTest extends AbstractMockTest {
 
         // Then
         assertThat(response.getStatusCode().value()).isEqualTo(500);
-        assertThat(response.getBody().getCode()).isEqualTo("10000");
-        assertThat(response.getBody().getMsg()).isEqualTo("Internal system error");
+        assertThat(response.getBody())
+                .isNotNull()
+                .extracting(Result::getCode, Result::getMsg)
+                .containsExactly("10000", "Internal system error");
     }
 
     @Test
@@ -233,9 +269,18 @@ class GlobalExceptionHandlerTest extends AbstractMockTest {
         assertThat(response2.getStatusCode().value()).isEqualTo(500);
         assertThat(response3.getStatusCode().value()).isEqualTo(500);
 
-        assertThat(response1.getBody().getCode()).isEqualTo("10000");
-        assertThat(response2.getBody().getCode()).isEqualTo("10000");
-        assertThat(response3.getBody().getCode()).isEqualTo("10000");
+        assertThat(response1.getBody())
+                .isNotNull()
+                .extracting(Result::getCode)
+                .isEqualTo("10000");
+        assertThat(response2.getBody())
+                .isNotNull()
+                .extracting(Result::getCode)
+                .isEqualTo("10000");
+        assertThat(response3.getBody())
+                .isNotNull()
+                .extracting(Result::getCode)
+                .isEqualTo("10000");
     }
 
     @Test
@@ -258,10 +303,26 @@ class GlobalExceptionHandlerTest extends AbstractMockTest {
                 .handleException(systemException, request);
 
         // Then
-        assertThat(response1.getBody().getCode()).isNotBlank();
-        assertThat(response2.getBody().getCode()).isNotBlank();
-        assertThat(response3.getBody().getCode()).isNotBlank();
-        assertThat(response4.getBody().getCode()).isNotBlank();
+        assertThat(response1.getBody())
+                .isNotNull()
+                .extracting(Result::getCode)
+                .asString()
+                .isNotEmpty();
+        assertThat(response2.getBody())
+                .isNotNull()
+                .extracting(Result::getCode)
+                .asString()
+                .isNotEmpty();
+        assertThat(response3.getBody())
+                .isNotNull()
+                .extracting(Result::getCode)
+                .asString()
+                .isNotEmpty();
+        assertThat(response4.getBody())
+                .isNotNull()
+                .extracting(Result::getCode)
+                .asString()
+                .isNotEmpty();
     }
 
     @Test
@@ -275,7 +336,11 @@ class GlobalExceptionHandlerTest extends AbstractMockTest {
                 .handleException(exception, request);
 
         // Then
-        assertThat(response.getBody().getMsg()).isNotBlank();
+        assertThat(response.getBody())
+                .isNotNull()
+                .extracting(Result::getMsg)
+                .asString()
+                .isNotEmpty();
     }
 
     @Test
@@ -289,7 +354,10 @@ class GlobalExceptionHandlerTest extends AbstractMockTest {
                 .handleAuthenticationException(exception, request);
 
         // Then
-        assertThat(response.getBody().getData()).isNull();
+        assertThat(response.getBody())
+                .isNotNull()
+                .extracting(Result::getData)
+                .isNull();
     }
 
     @Test
@@ -399,5 +467,111 @@ class GlobalExceptionHandlerTest extends AbstractMockTest {
         assertThat(response1.getStatusCode().value()).isEqualTo(401);
         assertThat(response2.getStatusCode().value()).isEqualTo(403);
         assertThat(response3.getStatusCode().value()).isEqualTo(400);
+    }
+
+    @Test
+    @DisplayName("Should handle method argument not valid exception")
+    void shouldHandleMethodArgumentNotValidException() throws NoSuchMethodException {
+        // Given
+        List<FieldError> fieldErrors = List.of(
+                new FieldError("dto", "username", "invalid", false, null, null, "Username is required"),
+                new FieldError("dto", "email", "invalid", false, null, null, "Invalid email format")
+        );
+
+        when(bindingResult.getFieldErrors()).thenReturn(fieldErrors);
+        when(bindingResult.getAllErrors()).thenReturn(java.util.List.copyOf(fieldErrors));
+        when(bindingResult.getTarget()).thenReturn(new Object());
+
+        MethodParameter methodParameter = new MethodParameter(
+                getClass().getDeclaredMethod("dummyMethod", String.class), 0);
+
+        MethodArgumentNotValidException exception = new MethodArgumentNotValidException(
+                methodParameter, bindingResult
+        );
+
+        when(request.getRequestURI()).thenReturn("/api/users");
+        when(request.getMethod()).thenReturn("POST");
+
+        // When
+        ResponseEntity<Result<Void>> response = globalExceptionHandler
+                .handleValidationException(exception, request);
+
+        // Then
+        assertThat(response).isNotNull();
+        assertThat(response.getStatusCode().value()).isEqualTo(400);
+        assertThat(response.getBody())
+                .isNotNull()
+                .extracting(Result::getCode)
+                .isEqualTo("20001");
+        assertThat(response.getBody().getMsg())
+                .contains("Username is required")
+                .contains("Invalid email format");
+    }
+
+    @Test
+    @DisplayName("Should handle constraint violation exception")
+    void shouldHandleConstraintViolationException() {
+        // Given
+        ConstraintViolation<String> violation1 = createMockViolation("Username is required");
+        ConstraintViolation<String> violation2 = createMockViolation("Email format invalid");
+
+        ConstraintViolationException exception = new ConstraintViolationException(
+                "Validation failed",
+                new java.util.HashSet<>(java.util.List.of(violation1, violation2))
+        );
+
+        when(request.getRequestURI()).thenReturn("/api/users");
+        when(request.getMethod()).thenReturn("POST");
+
+        // When
+        ResponseEntity<Result<Void>> response = globalExceptionHandler
+                .handleConstraintViolationException(exception, request);
+
+        // Then
+        assertThat(response).isNotNull();
+        assertThat(response.getStatusCode().value()).isEqualTo(400);
+        assertThat(response.getBody())
+                .isNotNull()
+                .extracting(Result::getCode)
+                .isEqualTo("20001");
+        assertThat(response.getBody().getMsg()).isNotBlank();
+    }
+
+    @Test
+    @DisplayName("Validation exception should return 400 status code")
+    void shouldReturn400ForValidationException() throws NoSuchMethodException {
+        // Given
+        FieldError fieldError = new FieldError("dto", "password", null, false, null, null,
+                "Password length must be between 6 and 20");
+
+        when(bindingResult.getFieldErrors()).thenReturn(java.util.List.of(fieldError));
+        when(bindingResult.getAllErrors()).thenReturn(java.util.List.of(fieldError));
+        when(bindingResult.getTarget()).thenReturn(new Object());
+
+        MethodParameter methodParameter = new MethodParameter(
+                getClass().getDeclaredMethod("dummyMethod", String.class), 0);
+
+        MethodArgumentNotValidException exception = new MethodArgumentNotValidException(
+                methodParameter, bindingResult
+        );
+
+        // When
+        ResponseEntity<Result<Void>> response = globalExceptionHandler
+                .handleValidationException(exception, request);
+
+        // Then
+        assertThat(response.getStatusCode().value()).isEqualTo(400);
+    }
+
+    @SuppressWarnings("unused")
+    private void dummyMethod(String param) {
+        // Dummy method for MethodParameter creation
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> ConstraintViolation<T> createMockViolation(String message) {
+        ConstraintViolation<T> mockViolation = org.mockito.Mockito.mock(ConstraintViolation.class);
+        org.mockito.Mockito.when(mockViolation.getMessage()).thenReturn(message);
+        return mockViolation;
     }
 }

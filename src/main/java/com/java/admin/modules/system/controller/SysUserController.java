@@ -2,6 +2,7 @@ package com.java.admin.modules.system.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.java.admin.infrastructure.model.Result;
+import com.java.admin.modules.system.dto.CreateUserRequestDTO;
 import com.java.admin.modules.system.model.SysUser;
 import com.java.admin.modules.system.service.SysUserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -9,6 +10,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -73,9 +75,29 @@ public class SysUserController {
             @PathVariable String id) {
 
         log.info("Get user by ID request - User ID: {}", id);
-
         SysUser result = sysUserService.getUserById(id);
         log.info("Get user by ID success - User ID: {}, Username: {}", id, result.getUserName());
         return Result.success(result);
+    }
+
+    /**
+     * Create new user (ADMIN only)
+     */
+    @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Create user", description = "Create a new user (ADMIN only)")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "User created successfully"),
+            @ApiResponse(responseCode = "400", description = "Bad request - validation failed or username exists"),
+            @ApiResponse(responseCode = "403", description = "Forbidden - not an admin")
+    })
+    public Result<Void> createUser(
+            @Parameter(description = "Create user request")
+            @Valid @RequestBody CreateUserRequestDTO dto) {
+
+        log.info("Create user request - username={}, email={}", dto.getUsername(), dto.getEmail());
+        sysUserService.createUser(dto);
+        log.info("Create user success - user created successfully");
+        return Result.success();
     }
 }

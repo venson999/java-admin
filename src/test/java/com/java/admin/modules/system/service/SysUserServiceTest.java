@@ -2,6 +2,7 @@ package com.java.admin.modules.system.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.java.admin.modules.system.dto.CreateUserRequestDTO;
 import com.java.admin.modules.system.mapper.SysUserMapper;
 import com.java.admin.modules.system.model.SysUser;
 import com.java.admin.testutil.AbstractMockTest;
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
 import java.util.Objects;
@@ -36,6 +38,9 @@ class SysUserServiceTest extends AbstractMockTest {
 
     @Mock
     private SysUserMapper sysUserMapper;
+
+    @Mock
+    private PasswordEncoder passwordEncoder;
 
     @InjectMocks
     private SysUserService sysUserService;
@@ -462,5 +467,122 @@ class SysUserServiceTest extends AbstractMockTest {
                 .hasMessageContaining("User not found");
 
         verify(sysUserMapper, times(1)).selectById(userId);
+    }
+
+    @Test
+    @DisplayName("Should create user successfully with valid data")
+    void shouldCreateUserSuccessfully() {
+        // Given
+        CreateUserRequestDTO dto = new CreateUserRequestDTO();
+        dto.setUsername("newuser");
+        dto.setPassword("password123");
+        dto.setEmail("newuser@example.com");
+
+        when(sysUserMapper.selectCount(any())).thenReturn(0L);
+        when(passwordEncoder.encode("password123")).thenReturn("$2a$10$encoded");
+        when(sysUserMapper.insert(any(SysUser.class))).thenAnswer(invocation -> {
+            SysUser user = invocation.getArgument(0);
+            user.setUserId("100");
+            return 1;
+        });
+
+        // When
+        sysUserService.createUser(dto);
+
+        // Then
+        verify(sysUserMapper, times(1)).selectCount(any());
+        verify(passwordEncoder, times(1)).encode("password123");
+        verify(sysUserMapper, times(1)).insert(any(SysUser.class));
+    }
+
+    @Test
+    @DisplayName("Should create user with default role when role not specified")
+    void shouldCreateUserWithDefaultRole() {
+        // Given
+        CreateUserRequestDTO dto = new CreateUserRequestDTO();
+        dto.setUsername("newuser");
+        dto.setPassword("password123");
+        dto.setEmail("newuser@example.com");
+
+        when(sysUserMapper.selectCount(any())).thenReturn(0L);
+        when(passwordEncoder.encode("password123")).thenReturn("$2a$10$encoded");
+        when(sysUserMapper.insert(any(SysUser.class))).thenAnswer(invocation -> {
+            SysUser user = invocation.getArgument(0);
+            user.setUserId("100");
+            return 1;
+        });
+
+        // When
+        sysUserService.createUser(dto);
+
+        // Then
+        verify(sysUserMapper, times(1)).insert(any(SysUser.class));
+    }
+
+    @Test
+    @DisplayName("Should throw exception when username already exists")
+    void shouldThrowExceptionWhenUsernameExists() {
+        // Given
+        CreateUserRequestDTO dto = new CreateUserRequestDTO();
+        dto.setUsername("existinguser");
+        dto.setPassword("password123");
+        dto.setEmail("existing@example.com");
+
+        when(sysUserMapper.selectCount(any())).thenReturn(1L);
+
+        // When & Then
+        assertThatThrownBy(() -> sysUserService.createUser(dto))
+                .isInstanceOf(com.java.admin.infrastructure.exception.AppException.class);
+
+        verify(sysUserMapper, times(1)).selectCount(any());
+        verify(sysUserMapper, never()).insert(any(SysUser.class));
+    }
+
+    @Test
+    @DisplayName("Should encode password before saving")
+    void shouldEncodePassword() {
+        // Given
+        CreateUserRequestDTO dto = new CreateUserRequestDTO();
+        dto.setUsername("newuser");
+        dto.setPassword("plainpassword");
+        dto.setEmail("newuser@example.com");
+
+        when(sysUserMapper.selectCount(any())).thenReturn(0L);
+        when(passwordEncoder.encode("plainpassword")).thenReturn("$2a$10$encodedpassword");
+        when(sysUserMapper.insert(any(SysUser.class))).thenAnswer(invocation -> {
+            SysUser user = invocation.getArgument(0);
+            user.setUserId("100");
+            return 1;
+        });
+
+        // When
+        sysUserService.createUser(dto);
+
+        // Then
+        verify(passwordEncoder, times(1)).encode("plainpassword");
+        verify(sysUserMapper, times(1)).insert(argThat((SysUser user) ->
+            "$2a$10$encodedpassword".equals(user.getPassword())
+        ));
+    }
+
+    @Test
+    @DisplayName("Should throw exception when database insert fails")
+    void shouldThrowExceptionWhenInsertFails() {
+        // Given
+        CreateUserRequestDTO dto = new CreateUserRequestDTO();
+        dto.setUsername("newuser");
+        dto.setPassword("password123");
+        dto.setEmail("newuser@example.com");
+
+        when(sysUserMapper.selectCount(any())).thenReturn(0L);
+        when(passwordEncoder.encode("password123")).thenReturn("$2a$10$encoded");
+        when(sysUserMapper.insert(any(SysUser.class))).thenReturn(0);
+
+        // When & Then
+        assertThatThrownBy(() -> sysUserService.createUser(dto))
+                .isInstanceOf(com.java.admin.infrastructure.exception.AppException.class)
+                .hasMessageContaining("Failed to create user");
+
+        verify(sysUserMapper, times(1)).insert(any(SysUser.class));
     }
 }

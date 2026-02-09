@@ -3,13 +3,19 @@ package com.java.admin.infrastructure.handler;
 import com.java.admin.infrastructure.constants.ErrorCode;
 import com.java.admin.infrastructure.exception.AppException;
 import com.java.admin.infrastructure.model.Result;
-import lombok.extern.slf4j.Slf4j;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import java.util.stream.Collectors;
 
 @RestControllerAdvice
 @Slf4j
@@ -49,6 +55,55 @@ public class GlobalExceptionHandler {
 
         Result<Void> result = Result.error(e.getErrorCode().getCode(), e.getErrorMessage());
         return ResponseEntity.status(e.getHttpStatus()).body(result);
+    }
+
+    /**
+     * Handle Bean Validation exceptions (@Valid)
+     * <p>
+     * This handles validation failures for request body parameters annotated with @Valid.
+     * Extracts error messages from field errors and returns them in a user-friendly format.
+     *
+     * @param e      the validation exception
+     * @param request the HTTP request
+     * @return 400 Bad Request with error details
+     */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Result<Void>> handleValidationException(
+            MethodArgumentNotValidException e,
+            HttpServletRequest request) {
+        String errorMessage = e.getBindingResult().getFieldErrors().stream()
+                .map(FieldError::getDefaultMessage)
+                .collect(Collectors.joining(", "));
+
+        log.warn("Validation failed - URI: {}, Method: {}, Errors: {}",
+                request.getRequestURI(), request.getMethod(), errorMessage);
+
+        Result<Void> result = Result.error(ErrorCode.PARAM_VALIDATION_ERROR.getCode(), errorMessage);
+        return ResponseEntity.badRequest().body(result);
+    }
+
+    /**
+     * Handle constraint violation exceptions (@Validated)
+     * <p>
+     * This handles validation failures for request parameters annotated with @Validated.
+     *
+     * @param e      the validation exception
+     * @param request the HTTP request
+     * @return 400 Bad Request with error details
+     */
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<Result<Void>> handleConstraintViolationException(
+            ConstraintViolationException e,
+            HttpServletRequest request) {
+        String errorMessage = e.getConstraintViolations().stream()
+                .map(ConstraintViolation::getMessage)
+                .collect(Collectors.joining(", "));
+
+        log.warn("Constraint violation - URI: {}, Method: {}, Errors: {}",
+                request.getRequestURI(), request.getMethod(), errorMessage);
+
+        Result<Void> result = Result.error(ErrorCode.PARAM_VALIDATION_ERROR.getCode(), errorMessage);
+        return ResponseEntity.badRequest().body(result);
     }
 
     /**

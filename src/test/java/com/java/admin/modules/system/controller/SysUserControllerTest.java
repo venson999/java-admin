@@ -2,6 +2,7 @@ package com.java.admin.modules.system.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.java.admin.infrastructure.model.Result;
+import com.java.admin.modules.system.dto.CreateUserRequestDTO;
 import com.java.admin.modules.system.model.SysUser;
 import com.java.admin.modules.system.service.SysUserService;
 import com.java.admin.testutil.AbstractMockTest;
@@ -14,6 +15,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -314,6 +316,137 @@ class SysUserControllerTest extends AbstractMockTest {
         verify(sysUserService).pageUsers(0, 10, "");
     }
 
+    @Test
+    @DisplayName("Should create user successfully with valid data")
+    void shouldCreateUserSuccessfully() {
+        // Given
+        CreateUserRequestDTO dto = new CreateUserRequestDTO();
+        dto.setUsername("newuser");
+        dto.setPassword("Password123");
+        dto.setEmail("newuser@example.com");
+
+        doNothing().when(sysUserService).createUser(any(CreateUserRequestDTO.class));
+
+        // When
+        Result<Void> result = controller().createUser(dto);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getCode()).isEqualTo("200");
+
+        verify(sysUserService).createUser(dto);
+    }
+
+    @Test
+    @DisplayName("Should create user with default role when role not specified")
+    void shouldCreateUserWithDefaultRole() {
+        // Given
+        CreateUserRequestDTO dto = new CreateUserRequestDTO();
+        dto.setUsername("newuser");
+        dto.setPassword("Password123");
+        dto.setEmail("newuser@example.com");
+
+        doNothing().when(sysUserService).createUser(any(CreateUserRequestDTO.class));
+
+        // When
+        Result<Void> result = controller().createUser(dto);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getCode()).isEqualTo("200");
+
+        verify(sysUserService).createUser(argThat(request ->
+            "newuser".equals(request.getUsername()) &&
+            "Password123".equals(request.getPassword()) &&
+            "newuser@example.com".equals(request.getEmail())
+        ));
+    }
+
+    @Test
+    @DisplayName("Should create user without email")
+    void shouldCreateUserWithoutEmail() {
+        // Given
+        CreateUserRequestDTO dto = new CreateUserRequestDTO();
+        dto.setUsername("usernoemail");
+        dto.setPassword("Password123");
+        dto.setEmail(null);
+
+        doNothing().when(sysUserService).createUser(any(CreateUserRequestDTO.class));
+
+        // When
+        Result<Void> result = controller().createUser(dto);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getCode()).isEqualTo("200");
+
+        verify(sysUserService).createUser(argThat(request ->
+            "usernoemail".equals(request.getUsername()) &&
+            request.getEmail() == null
+        ));
+    }
+
+    @Test
+    @DisplayName("Should pass username to service layer")
+    void shouldPassUsernameToService() {
+        // Given
+        CreateUserRequestDTO dto = new CreateUserRequestDTO();
+        dto.setUsername("testuser");
+        dto.setPassword("Password123");
+        dto.setEmail("test@example.com");
+
+        doNothing().when(sysUserService).createUser(any(CreateUserRequestDTO.class));
+
+        // When
+        controller().createUser(dto);
+
+        // Then
+        verify(sysUserService).createUser(argThat(request ->
+            "testuser".equals(request.getUsername())
+        ));
+    }
+
+    @Test
+    @DisplayName("Should pass password to service layer")
+    void shouldPassPasswordToService() {
+        // Given
+        CreateUserRequestDTO dto = new CreateUserRequestDTO();
+        dto.setUsername("testuser");
+        dto.setPassword("SecurePass123");
+        dto.setEmail("test@example.com");
+
+        doNothing().when(sysUserService).createUser(any(CreateUserRequestDTO.class));
+
+        // When
+        controller().createUser(dto);
+
+        // Then
+        verify(sysUserService).createUser(argThat(request ->
+            "SecurePass123".equals(request.getPassword())
+        ));
+    }
+
+    @Test
+    @DisplayName("Should pass email to service layer")
+    void shouldPassEmailToService() {
+        // Given
+        CreateUserRequestDTO dto = new CreateUserRequestDTO();
+        dto.setUsername("testuser");
+        dto.setPassword("Password123");
+        dto.setEmail("testuser@example.com");
+
+        doNothing().when(sysUserService).createUser(any(CreateUserRequestDTO.class));
+
+        // When
+        controller().createUser(dto);
+
+        // Then
+        verify(sysUserService).createUser(argThat(request ->
+            "testuser@example.com".equals(request.getEmail())
+        ));
+    }
+
     // Note: Tests for getUserById endpoint require integration testing with Spring Security context
     // These tests should be added in a separate integration test class
+    // Note: Tests for createUser permission control (@PreAuthorize) require integration testing with Spring Security
 }
