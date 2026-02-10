@@ -2,6 +2,7 @@ package com.java.admin.modules.system.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.java.admin.infrastructure.model.Result;
+import com.java.admin.infrastructure.model.SecurityUserDetails;
 import com.java.admin.modules.system.dto.CreateUserRequestDTO;
 import com.java.admin.modules.system.dto.UpdateUserRequestDTO;
 import com.java.admin.modules.system.model.SysUser;
@@ -15,6 +16,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -25,16 +27,6 @@ import org.springframework.web.bind.annotation.*;
 public class SysUserController {
 
     private final SysUserService sysUserService;
-
-    @GetMapping("/info")
-    @Operation(summary = "Get current user info", description = "Retrieve authenticated user information")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "User info retrieved successfully"),
-            @ApiResponse(responseCode = "401", description = "Unauthorized - invalid or missing token")
-    })
-    public Result<Object> getUserInfo() {
-        return Result.success("user info");
-    }
 
     /**
      * Paginated user list query (ADMIN only)
@@ -125,6 +117,34 @@ public class SysUserController {
         log.info("Update user request - User ID: {}, Email: {}", id, dto.getEmail());
         sysUserService.updateUser(id, dto);
         log.info("Update user success - User ID: {}", id);
+        return Result.success();
+    }
+
+    /**
+     * Delete user (ADMIN only)
+     * Admin cannot delete themselves
+     */
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Delete user", description = "Delete user (soft delete, ADMIN only)")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "User deleted successfully"),
+            @ApiResponse(responseCode = "400", description = "Bad request - cannot delete yourself"),
+            @ApiResponse(responseCode = "403", description = "Forbidden - not an admin"),
+            @ApiResponse(responseCode = "404", description = "User not found")
+    })
+    public Result<Void> deleteUser(
+            @Parameter(description = "User ID")
+            @PathVariable String id,
+            Authentication authentication) {
+
+        // Get current user ID from authentication
+        SecurityUserDetails userDetails = (SecurityUserDetails) authentication.getPrincipal();
+        String currentUserId = userDetails.getUserid();
+
+        log.info("Delete user request - User ID: {}, Current User ID: {}", id, currentUserId);
+        sysUserService.deleteUser(id, currentUserId);
+        log.info("Delete user success - User ID: {}", id);
         return Result.success();
     }
 }

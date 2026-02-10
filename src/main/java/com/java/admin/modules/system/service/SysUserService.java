@@ -167,4 +167,38 @@ public class SysUserService {
 
         log.debug("Update user completed - User ID: {}, Username: {}", userId, existingUser.getUserName());
     }
+
+    /**
+     * Delete user (soft delete)
+     *
+     * @param userId       User ID to delete
+     * @param currentUserId Current user ID
+     * @throws AppException if user not found or trying to delete self
+     */
+    public void deleteUser(String userId, String currentUserId) {
+        log.debug("Delete user started - User ID: {}, Current User ID: {}", userId, currentUserId);
+
+        // Check if trying to delete self
+        if (userId.equals(currentUserId)) {
+            log.warn("User attempted to delete themselves - User ID: {}", userId);
+            throw new AppException(ErrorCode.CANNOT_DELETE_YOURSELF);
+        }
+
+        // Check if user exists
+        SysUser existingUser = sysUserMapper.selectById(userId);
+        if (existingUser == null) {
+            log.warn("User not found for deletion - User ID: {}", userId);
+            throw new AppException(ErrorCode.DATA_NOT_FOUND, "User not found");
+        }
+
+        // Soft delete using MyBatis Plus removeById (sets deleted=1 automatically)
+        int deleteResult = sysUserMapper.deleteById(userId);
+
+        if (deleteResult <= 0) {
+            log.error("Failed to delete user - User ID: {}", userId);
+            throw new AppException(ErrorCode.SYSTEM_ERROR, "Failed to delete user");
+        }
+
+        log.debug("Delete user completed - User ID: {}, Username: {}", userId, existingUser.getUserName());
+    }
 }

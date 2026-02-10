@@ -700,4 +700,123 @@ class SysUserServiceTest extends AbstractMockTest {
                 "existing@example.com".equals(user.getEmail()) // Email unchanged
         ));
     }
+
+    // ========== Delete User Tests ==========
+
+    @Test
+    @DisplayName("Should delete user successfully when valid")
+    void shouldDeleteUserSuccessfully() {
+        // Given
+        String userId = "2";
+        String currentUserId = "1";
+        SysUser existingUser = TestDataFactory.createDefaultUser();
+        existingUser.setUserId(userId);
+
+        when(sysUserMapper.selectById(userId)).thenReturn(existingUser);
+        when(sysUserMapper.deleteById((String) any())).thenReturn(1);
+
+        // When
+        sysUserService.deleteUser(userId, currentUserId);
+
+        // Then
+        verify(sysUserMapper, times(1)).selectById(userId);
+        verify(sysUserMapper, times(1)).deleteById((String) any());
+    }
+
+    @Test
+    @DisplayName("Should throw exception when trying to delete self")
+    void shouldThrowExceptionWhenDeleteSelf() {
+        // Given
+        String userId = "1";
+        String currentUserId = "1";
+
+        // When & Then
+        assertThatThrownBy(() -> sysUserService.deleteUser(userId, currentUserId))
+                .isInstanceOf(com.java.admin.infrastructure.exception.AppException.class)
+                .satisfies(e -> {
+                    com.java.admin.infrastructure.exception.AppException ex =
+                            (com.java.admin.infrastructure.exception.AppException) e;
+                    assertThat(ex.getErrorCode()).isEqualTo(com.java.admin.infrastructure.constants.ErrorCode.CANNOT_DELETE_YOURSELF);
+                });
+
+        verify(sysUserMapper, never()).deleteById((String) any());
+    }
+
+    @Test
+    @DisplayName("Should throw exception when deleting non-existent user")
+    void shouldThrowExceptionWhenUserNotFoundForDelete() {
+        // Given
+        String userId = "999";
+        String currentUserId = "1";
+
+        when(sysUserMapper.selectById(userId)).thenReturn(null);
+
+        // When & Then
+        assertThatThrownBy(() -> sysUserService.deleteUser(userId, currentUserId))
+                .isInstanceOf(com.java.admin.infrastructure.exception.AppException.class)
+                .hasMessageContaining("User not found");
+
+        verify(sysUserMapper, times(1)).selectById(userId);
+        verify(sysUserMapper, never()).deleteById((String) any());
+    }
+
+    @Test
+    @DisplayName("Should throw exception when database delete fails")
+    void shouldThrowExceptionWhenDeleteFails() {
+        // Given
+        String userId = "2";
+        String currentUserId = "1";
+        SysUser existingUser = TestDataFactory.createDefaultUser();
+        existingUser.setUserId(userId);
+
+        when(sysUserMapper.selectById(userId)).thenReturn(existingUser);
+        when(sysUserMapper.deleteById((String) any())).thenReturn(0);
+
+        // When & Then
+        assertThatThrownBy(() -> sysUserService.deleteUser(userId, currentUserId))
+                .isInstanceOf(com.java.admin.infrastructure.exception.AppException.class)
+                .hasMessageContaining("Failed to delete user");
+
+        verify(sysUserMapper, times(1)).deleteById((String) any());
+    }
+
+    @Test
+    @DisplayName("Should allow admin to delete different user")
+    void shouldAllowAdminToDeleteDifferentUser() {
+        // Given
+        String adminUserId = "1";
+        String targetUserId = "2";
+        SysUser targetUser = TestDataFactory.createDefaultUser();
+        targetUser.setUserId(targetUserId);
+
+        when(sysUserMapper.selectById(targetUserId)).thenReturn(targetUser);
+        when(sysUserMapper.deleteById((String) any())).thenReturn(1);
+
+        // When
+        sysUserService.deleteUser(targetUserId, adminUserId);
+
+        // Then
+        verify(sysUserMapper, times(1)).deleteById((String) any());
+    }
+
+    @Test
+    @DisplayName("Should handle user ID comparison correctly")
+    void shouldHandleUserIdComparisonCorrectly() {
+        // Given
+        String userId = "1";
+        String differentUserId = "2";
+
+        // When & Then - Different IDs should not throw exception
+        assertThatThrownBy(() -> sysUserService.deleteUser(userId, userId))
+                .isInstanceOf(com.java.admin.infrastructure.exception.AppException.class);
+
+        // Different IDs should proceed
+        SysUser existingUser = TestDataFactory.createDefaultUser();
+        existingUser.setUserId(userId);
+        when(sysUserMapper.selectById(userId)).thenReturn(existingUser);
+        when(sysUserMapper.deleteById((String) any())).thenReturn(1);
+
+        sysUserService.deleteUser(userId, differentUserId);
+        verify(sysUserMapper, times(1)).deleteById((String) any());
+    }
 }

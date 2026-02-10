@@ -2,6 +2,7 @@ package com.java.admin.modules.system.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.java.admin.infrastructure.model.Result;
+import com.java.admin.infrastructure.model.SecurityUserDetails;
 import com.java.admin.modules.system.dto.CreateUserRequestDTO;
 import com.java.admin.modules.system.dto.UpdateUserRequestDTO;
 import com.java.admin.modules.system.model.SysUser;
@@ -11,12 +12,14 @@ import com.java.admin.testutil.TestDataFactory;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.springframework.security.core.Authentication;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -25,8 +28,8 @@ import static org.mockito.Mockito.when;
  *
  * <p>Test Coverage:
  * <ul>
- *   <li>User info query endpoint</li>
  *   <li>User pagination endpoint</li>
+ *   <li>User CRUD operations</li>
  *   <li>Response format verification</li>
  *   <li>Permission control</li>
  * </ul>
@@ -41,94 +44,6 @@ class SysUserControllerTest extends AbstractMockTest {
 
     private SysUserController controller() {
         return new SysUserController(sysUserService);
-    }
-
-    @Test
-    @DisplayName("Should return user info")
-    void shouldReturnUserInfo() {
-        // When
-        Result<Object> result = controller().getUserInfo();
-
-        // Then
-        assertThat(result).isNotNull();
-        assertThat(result.getCode()).isEqualTo("200");
-        assertThat(result.getData()).isEqualTo("user info");
-    }
-
-    @Test
-    @DisplayName("Should return correct response format")
-    void shouldReturnCorrectResponseFormat() {
-        // When
-        Result<Object> result = controller().getUserInfo();
-
-        // Then
-        assertThat(result).isNotNull();
-        assertThat(result.getCode()).isNotNull();
-        assertThat(result.getData()).isNotNull();
-    }
-
-    @Test
-    @DisplayName("Should return string type user info")
-    void shouldReturnStringUserInfo() {
-        // When
-        Result<Object> result = controller().getUserInfo();
-
-        // Then
-        assertThat(result.getData()).isInstanceOf(String.class);
-    }
-
-    @Test
-    @DisplayName("Should return correct user info content")
-    void shouldReturnCorrectUserInfoContent() {
-        // When
-        Result<Object> result = controller().getUserInfo();
-
-        // Then
-        assertThat(result.getData()).isEqualTo("user info");
-    }
-
-    @Test
-    @DisplayName("Should return 200 status code")
-    void shouldReturn200StatusCode() {
-        // When
-        Result<Object> result = controller().getUserInfo();
-
-        // Then
-        assertThat(result.getCode()).isEqualTo("200");
-    }
-
-    @Test
-    @DisplayName("Should return consistent results on multiple calls")
-    void shouldReturnConsistentResultsOnMultipleCalls() {
-        // When
-        Result<Object> result1 = controller().getUserInfo();
-        Result<Object> result2 = controller().getUserInfo();
-
-        // Then
-        assertThat(result1).isEqualTo(result2);
-    }
-
-    @Test
-    @DisplayName("Should return non-null response")
-    void shouldReturnNonNullResponse() {
-        // When
-        Result<Object> result = controller().getUserInfo();
-
-        // Then
-        assertThat(result).isNotNull();
-        assertThat(result.getCode()).isNotNull();
-        assertThat(result.getData()).isNotNull();
-    }
-
-    @Test
-    @DisplayName("Response should contain success status code")
-    void shouldContainSuccessCode() {
-        // When
-        Result<Object> result = controller().getUserInfo();
-
-        // Then
-        assertThat(result.getCode()).isNotBlank();
-        assertThat(result.getCode()).isEqualTo("200");
     }
 
     @Test
@@ -655,5 +570,98 @@ class SysUserControllerTest extends AbstractMockTest {
         assertThat(result.getData()).isNull();
     }
 
-    // Note: Tests for updateUser and getUserById permission control (@PreAuthorize) require integration testing with Spring Security
+    @Test
+    @DisplayName("Should delete user successfully when valid")
+    void shouldDeleteUserSuccessfully() {
+        // Given
+        String userId = "2";
+        String currentUserId = "1";
+
+        Authentication authentication = mock(Authentication.class);
+        SysUser currentUser = TestDataFactory.createDefaultUser();
+        currentUser.setUserId(currentUserId);
+        SecurityUserDetails userDetails = new SecurityUserDetails(currentUser, List.of("ROLE_ADMIN"));
+        when(authentication.getPrincipal()).thenReturn(userDetails);
+
+        doNothing().when(sysUserService).deleteUser(eq(userId), eq(currentUserId));
+
+        // When
+        Result<Void> result = controller().deleteUser(userId, authentication);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getCode()).isEqualTo("200");
+
+        verify(sysUserService).deleteUser(eq(userId), eq(currentUserId));
+    }
+
+    @Test
+    @DisplayName("Should pass user ID to service layer for deletion")
+    void shouldPassUserIdToServiceForDeletion() {
+        // Given
+        String userId = "456";
+        String currentUserId = "1";
+
+        Authentication authentication = mock(Authentication.class);
+        SysUser currentUser = TestDataFactory.createDefaultUser();
+        currentUser.setUserId(currentUserId);
+        SecurityUserDetails userDetails = new SecurityUserDetails(currentUser, List.of("ROLE_ADMIN"));
+        when(authentication.getPrincipal()).thenReturn(userDetails);
+
+        doNothing().when(sysUserService).deleteUser(anyString(), anyString());
+
+        // When
+        controller().deleteUser(userId, authentication);
+
+        // Then
+        verify(sysUserService).deleteUser(eq(userId), eq(currentUserId));
+    }
+
+    @Test
+    @DisplayName("Should get current user ID from authentication")
+    void shouldGetCurrentUserIdFromAuthentication() {
+        // Given
+        String userId = "2";
+        String currentUserId = "1";
+
+        Authentication authentication = mock(Authentication.class);
+        SysUser currentUser = TestDataFactory.createDefaultUser();
+        currentUser.setUserId(currentUserId);
+        SecurityUserDetails userDetails = new SecurityUserDetails(currentUser, List.of("ROLE_ADMIN"));
+        when(authentication.getPrincipal()).thenReturn(userDetails);
+
+        doNothing().when(sysUserService).deleteUser(anyString(), anyString());
+
+        // When
+        controller().deleteUser(userId, authentication);
+
+        // Then
+        verify(sysUserService).deleteUser(anyString(), eq(currentUserId));
+    }
+
+    @Test
+    @DisplayName("Should return success result after deletion")
+    void shouldReturnSuccessResultAfterDeletion() {
+        // Given
+        String userId = "123";
+        String currentUserId = "1";
+
+        Authentication authentication = mock(Authentication.class);
+        SysUser currentUser = TestDataFactory.createDefaultUser();
+        currentUser.setUserId(currentUserId);
+        SecurityUserDetails userDetails = new SecurityUserDetails(currentUser, List.of("ROLE_ADMIN"));
+        when(authentication.getPrincipal()).thenReturn(userDetails);
+
+        doNothing().when(sysUserService).deleteUser(eq(userId), eq(currentUserId));
+
+        // When
+        Result<Void> result = controller().deleteUser(userId, authentication);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getCode()).isEqualTo("200");
+        assertThat(result.getData()).isNull();
+    }
+
+    // Note: Tests for delete user permission control (@PreAuthorize "hasRole('ADMIN')") require integration testing with Spring Security
 }
