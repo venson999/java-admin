@@ -26,8 +26,8 @@ public class MybatisPlusMetaObjectHandler implements MetaObjectHandler {
 
     @Override
     public void updateFill(MetaObject metaObject) {
-        this.strictUpdateFill(metaObject, "updatedAt", Date.class, new Date());
-        this.strictUpdateFill(metaObject, "updatedBy", String.class, getCurrentUserId());
+        this.setFieldValByName("updatedAt", new Date(), metaObject);
+        this.setFieldValByName("updatedBy", getCurrentUserId(), metaObject);
     }
 
     /**
