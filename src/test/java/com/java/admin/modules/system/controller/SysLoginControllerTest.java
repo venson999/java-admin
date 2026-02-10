@@ -465,4 +465,51 @@ class SysLoginControllerTest extends AbstractMockTest {
                 .isInstanceOf(RuntimeException.class)
                 .hasMessage("Service unavailable");
     }
+
+    // ==================== Deleted User Login Tests ====================
+
+    @Test
+    @DisplayName("Should return authentication error when deleted user tries to login")
+    void shouldReturnAuthenticationErrorWhenDeletedUserTriesToLogin() {
+        // Given
+        LoginUser loginUser = new LoginUser();
+        loginUser.setUsername("deleted-user");
+        loginUser.setPassword("password");
+
+        // Service returns null because deleted user cannot be found (filtered by @TableLogic)
+        when(sysLoginService.login("deleted-user", "password"))
+                .thenReturn(null);
+
+        // When
+        Result<String> result = controller.login(loginUser);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getCode()).isEqualTo(ErrorCode.AUTHENTICATION_ERROR.getCode());
+        assertThat(result.getMsg()).isEqualTo(ErrorCode.AUTHENTICATION_ERROR.getMessage());
+
+        verify(sysLoginService, times(1)).login("deleted-user", "password");
+    }
+
+    @Test
+    @DisplayName("Should allow active user to login successfully")
+    void shouldAllowActiveUserToLoginSuccessfully() {
+        // Given
+        LoginUser loginUser = new LoginUser();
+        loginUser.setUsername("active-user");
+        loginUser.setPassword("password");
+
+        when(sysLoginService.login("active-user", "password"))
+                .thenReturn("valid-jwt-token");
+
+        // When
+        Result<String> result = controller.login(loginUser);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getCode()).isEqualTo("200");
+        assertThat(result.getData()).isEqualTo("valid-jwt-token");
+
+        verify(sysLoginService, times(1)).login("active-user", "password");
+    }
 }
