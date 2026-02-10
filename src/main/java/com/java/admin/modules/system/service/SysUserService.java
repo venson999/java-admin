@@ -3,9 +3,10 @@ package com.java.admin.modules.system.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.java.admin.infrastructure.exception.AppException;
 import com.java.admin.infrastructure.constants.ErrorCode;
+import com.java.admin.infrastructure.exception.AppException;
 import com.java.admin.modules.system.dto.CreateUserRequestDTO;
+import com.java.admin.modules.system.dto.UpdateUserRequestDTO;
 import com.java.admin.modules.system.mapper.SysUserMapper;
 import com.java.admin.modules.system.model.SysUser;
 import lombok.RequiredArgsConstructor;
@@ -103,7 +104,7 @@ public class SysUserService {
      * @throws AppException if username already exists
      */
     public void createUser(CreateUserRequestDTO dto) {
-        log.info("Create user started - Username: {}", dto.getUsername());
+        log.debug("Create user started - Username: {}", dto.getUsername());
 
         // Check username uniqueness (including deleted users)
         LambdaQueryWrapper<SysUser> queryWrapper = Wrappers.lambdaQuery();
@@ -130,7 +131,40 @@ public class SysUserService {
             throw new AppException(ErrorCode.SYSTEM_ERROR, "Failed to create user");
         }
 
-        log.info("Create user completed - User ID: {}, Username: {}",
-            user.getUserId(), user.getUserName());
+        log.debug("Create user completed - User ID: {}, Username: {}",
+                user.getUserId(), user.getUserName());
+    }
+
+    /**
+     * Update user information
+     *
+     * @param userId User ID
+     * @param dto    Update user request DTO
+     * @throws AppException if user not found
+     */
+    public void updateUser(String userId, UpdateUserRequestDTO dto) {
+        log.debug("Update user started - User ID: {}", userId);
+
+        // Check if user exists
+        SysUser existingUser = sysUserMapper.selectById(userId);
+        if (existingUser == null) {
+            log.warn("User not found for update - User ID: {}", userId);
+            throw new AppException(ErrorCode.DATA_NOT_FOUND, "User not found");
+        }
+
+        // Update email (password field is ignored as per requirement)
+        if (StringUtils.hasText(dto.getEmail())) {
+            existingUser.setEmail(dto.getEmail());
+        }
+
+        // Update user (audit fields will be auto-filled by MybatisPlusMetaObjectHandler)
+        int updateResult = sysUserMapper.updateById(existingUser);
+
+        if (updateResult <= 0) {
+            log.error("Failed to update user - User ID: {}", userId);
+            throw new AppException(ErrorCode.SYSTEM_ERROR, "Failed to update user");
+        }
+
+        log.debug("Update user completed - User ID: {}, Username: {}", userId, existingUser.getUserName());
     }
 }

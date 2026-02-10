@@ -3,6 +3,7 @@ package com.java.admin.modules.system.controller;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.java.admin.infrastructure.model.Result;
 import com.java.admin.modules.system.dto.CreateUserRequestDTO;
+import com.java.admin.modules.system.dto.UpdateUserRequestDTO;
 import com.java.admin.modules.system.model.SysUser;
 import com.java.admin.modules.system.service.SysUserService;
 import com.java.admin.testutil.AbstractMockTest;
@@ -449,4 +450,210 @@ class SysUserControllerTest extends AbstractMockTest {
     // Note: Tests for getUserById endpoint require integration testing with Spring Security context
     // These tests should be added in a separate integration test class
     // Note: Tests for createUser permission control (@PreAuthorize) require integration testing with Spring Security
+
+    @Test
+    @DisplayName("Should get user by ID successfully")
+    void shouldGetUserById() {
+        // Given
+        String userId = "123";
+        SysUser user = TestDataFactory.createDefaultUser();
+        user.setUserId(userId);
+
+        when(sysUserService.getUserById(userId)).thenReturn(user);
+
+        // When
+        Result<SysUser> result = controller().getUserById(userId);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getCode()).isEqualTo("200");
+        assertThat(result.getData()).isNotNull();
+        assertThat(result.getData().getUserId()).isEqualTo(userId);
+
+        verify(sysUserService).getUserById(userId);
+    }
+
+    @Test
+    @DisplayName("Should get user with correct username")
+    void shouldGetUserWithCorrectUsername() {
+        // Given
+        String userId = "123";
+        SysUser user = TestDataFactory.createAdminUser();
+        user.setUserId(userId);
+
+        when(sysUserService.getUserById(userId)).thenReturn(user);
+
+        // When
+        Result<SysUser> result = controller().getUserById(userId);
+
+        // Then
+        assertThat(result.getData().getUserName()).isEqualTo("admin");
+        verify(sysUserService).getUserById(userId);
+    }
+
+    @Test
+    @DisplayName("Should get user with correct email")
+    void shouldGetUserWithCorrectEmail() {
+        // Given
+        String userId = "123";
+        SysUser user = TestDataFactory.createDefaultUser();
+        user.setUserId(userId);
+        user.setEmail("test@example.com");
+
+        when(sysUserService.getUserById(userId)).thenReturn(user);
+
+        // When
+        Result<SysUser> result = controller().getUserById(userId);
+
+        // Then
+        assertThat(result.getData().getEmail()).isEqualTo("test@example.com");
+        verify(sysUserService).getUserById(userId);
+    }
+
+    @Test
+    @DisplayName("Should return user entity with all fields")
+    void shouldReturnUserEntityWithAllFields() {
+        // Given
+        String userId = "123";
+        SysUser user = TestDataFactory.createDefaultUser();
+        user.setUserId(userId);
+        user.setUserName("testuser");
+        user.setEmail("test@example.com");
+
+        when(sysUserService.getUserById(userId)).thenReturn(user);
+
+        // When
+        Result<SysUser> result = controller().getUserById(userId);
+
+        // Then
+        assertThat(result.getData()).isNotNull();
+        assertThat(result.getData().getUserId()).isEqualTo(userId);
+        assertThat(result.getData().getUserName()).isEqualTo("testuser");
+        assertThat(result.getData().getEmail()).isEqualTo("test@example.com");
+
+        verify(sysUserService).getUserById(userId);
+    }
+
+    @Test
+    @DisplayName("Should update user email successfully")
+    void shouldUpdateUserEmail() {
+        // Given
+        String userId = "123";
+        UpdateUserRequestDTO dto = new UpdateUserRequestDTO();
+        dto.setEmail("newemail@example.com");
+
+        doNothing().when(sysUserService).updateUser(eq(userId), any(UpdateUserRequestDTO.class));
+
+        // When
+        Result<Void> result = controller().updateUser(userId, dto);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getCode()).isEqualTo("200");
+
+        verify(sysUserService).updateUser(eq(userId), argThat(request ->
+            "newemail@example.com".equals(request.getEmail())
+        ));
+    }
+
+    @Test
+    @DisplayName("Should update user with null email")
+    void shouldUpdateUserWithNullEmail() {
+        // Given
+        String userId = "123";
+        UpdateUserRequestDTO dto = new UpdateUserRequestDTO();
+        dto.setEmail(null);
+
+        doNothing().when(sysUserService).updateUser(eq(userId), any(UpdateUserRequestDTO.class));
+
+        // When
+        Result<Void> result = controller().updateUser(userId, dto);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getCode()).isEqualTo("200");
+
+        verify(sysUserService).updateUser(eq(userId), argThat(request ->
+            request.getEmail() == null
+        ));
+    }
+
+    @Test
+    @DisplayName("Should update user with empty email")
+    void shouldUpdateUserWithEmptyEmail() {
+        // Given
+        String userId = "123";
+        UpdateUserRequestDTO dto = new UpdateUserRequestDTO();
+        dto.setEmail("");
+
+        doNothing().when(sysUserService).updateUser(eq(userId), any(UpdateUserRequestDTO.class));
+
+        // When
+        Result<Void> result = controller().updateUser(userId, dto);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getCode()).isEqualTo("200");
+
+        verify(sysUserService).updateUser(eq(userId), argThat(request ->
+            "".equals(request.getEmail())
+        ));
+    }
+
+    @Test
+    @DisplayName("Should pass user ID to service layer for update")
+    void shouldPassUserIdToServiceForUpdate() {
+        // Given
+        String userId = "456";
+        UpdateUserRequestDTO dto = new UpdateUserRequestDTO();
+        dto.setEmail("updated@example.com");
+
+        doNothing().when(sysUserService).updateUser(eq(userId), any(UpdateUserRequestDTO.class));
+
+        // When
+        controller().updateUser(userId, dto);
+
+        // Then
+        verify(sysUserService).updateUser(eq(userId), any(UpdateUserRequestDTO.class));
+    }
+
+    @Test
+    @DisplayName("Should pass email to service layer for update")
+    void shouldPassEmailToServiceForUpdate() {
+        // Given
+        String userId = "123";
+        UpdateUserRequestDTO dto = new UpdateUserRequestDTO();
+        dto.setEmail("myemail@example.com");
+
+        doNothing().when(sysUserService).updateUser(eq(userId), any(UpdateUserRequestDTO.class));
+
+        // When
+        controller().updateUser(userId, dto);
+
+        // Then
+        verify(sysUserService).updateUser(eq(userId), argThat(request ->
+            "myemail@example.com".equals(request.getEmail())
+        ));
+    }
+
+    @Test
+    @DisplayName("Should return success result after update")
+    void shouldReturnSuccessResultAfterUpdate() {
+        // Given
+        String userId = "123";
+        UpdateUserRequestDTO dto = new UpdateUserRequestDTO();
+        dto.setEmail("new@example.com");
+
+        doNothing().when(sysUserService).updateUser(eq(userId), any(UpdateUserRequestDTO.class));
+
+        // When
+        Result<Void> result = controller().updateUser(userId, dto);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getCode()).isEqualTo("200");
+        assertThat(result.getData()).isNull();
+    }
+
+    // Note: Tests for updateUser and getUserById permission control (@PreAuthorize) require integration testing with Spring Security
 }

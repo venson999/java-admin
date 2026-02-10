@@ -3,6 +3,7 @@ package com.java.admin.modules.system.service;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.java.admin.modules.system.dto.CreateUserRequestDTO;
+import com.java.admin.modules.system.dto.UpdateUserRequestDTO;
 import com.java.admin.modules.system.mapper.SysUserMapper;
 import com.java.admin.modules.system.model.SysUser;
 import com.java.admin.testutil.AbstractMockTest;
@@ -561,7 +562,7 @@ class SysUserServiceTest extends AbstractMockTest {
         // Then
         verify(passwordEncoder, times(1)).encode("plainpassword");
         verify(sysUserMapper, times(1)).insert(argThat((SysUser user) ->
-            "$2a$10$encodedpassword".equals(user.getPassword())
+                "$2a$10$encodedpassword".equals(user.getPassword())
         ));
     }
 
@@ -584,5 +585,119 @@ class SysUserServiceTest extends AbstractMockTest {
                 .hasMessageContaining("Failed to create user");
 
         verify(sysUserMapper, times(1)).insert(any(SysUser.class));
+    }
+
+    @Test
+    @DisplayName("Should update user email successfully")
+    void shouldUpdateUserEmail() {
+        // Given
+        String userId = "2";
+        UpdateUserRequestDTO dto = new UpdateUserRequestDTO();
+        dto.setEmail("newemail@example.com");
+
+        SysUser existingUser = TestDataFactory.createDefaultUser();
+        existingUser.setUserId(userId);
+        existingUser.setEmail("old@example.com");
+
+        when(sysUserMapper.selectById(userId)).thenReturn(existingUser);
+        when(sysUserMapper.updateById(any(SysUser.class))).thenReturn(1);
+
+        // When
+        sysUserService.updateUser(userId, dto);
+
+        // Then
+        verify(sysUserMapper, times(1)).selectById(userId);
+        verify(sysUserMapper, times(1)).updateById(argThat((SysUser user) ->
+                "newemail@example.com".equals(user.getEmail())
+        ));
+    }
+
+    @Test
+    @DisplayName("Should throw exception when updating non-existent user")
+    void shouldThrowExceptionWhenUserNotFoundForUpdate() {
+        // Given
+        String userId = "999";
+        UpdateUserRequestDTO dto = new UpdateUserRequestDTO();
+        dto.setEmail("new@example.com");
+
+        when(sysUserMapper.selectById(userId)).thenReturn(null);
+
+        // When & Then
+        assertThatThrownBy(() -> sysUserService.updateUser(userId, dto))
+                .isInstanceOf(com.java.admin.infrastructure.exception.AppException.class)
+                .hasMessageContaining("User not found");
+
+        verify(sysUserMapper, times(1)).selectById(userId);
+        verify(sysUserMapper, never()).updateById(any(SysUser.class));
+    }
+
+    @Test
+    @DisplayName("Should throw exception when database update fails")
+    void shouldThrowExceptionWhenUpdateFails() {
+        // Given
+        String userId = "2";
+        UpdateUserRequestDTO dto = new UpdateUserRequestDTO();
+        dto.setEmail("new@example.com");
+
+        SysUser existingUser = TestDataFactory.createDefaultUser();
+        existingUser.setUserId(userId);
+
+        when(sysUserMapper.selectById(userId)).thenReturn(existingUser);
+        when(sysUserMapper.updateById(any(SysUser.class))).thenReturn(0);
+
+        // When & Then
+        assertThatThrownBy(() -> sysUserService.updateUser(userId, dto))
+                .isInstanceOf(com.java.admin.infrastructure.exception.AppException.class)
+                .hasMessageContaining("Failed to update user");
+
+        verify(sysUserMapper, times(1)).updateById(any(SysUser.class));
+    }
+
+    @Test
+    @DisplayName("Should ignore null email in update request")
+    void shouldIgnoreNullEmail() {
+        // Given
+        String userId = "2";
+        UpdateUserRequestDTO dto = new UpdateUserRequestDTO();
+        dto.setEmail(null);
+
+        SysUser existingUser = TestDataFactory.createDefaultUser();
+        existingUser.setUserId(userId);
+        existingUser.setEmail("existing@example.com");
+
+        when(sysUserMapper.selectById(userId)).thenReturn(existingUser);
+        when(sysUserMapper.updateById(any(SysUser.class))).thenReturn(1);
+
+        // When
+        sysUserService.updateUser(userId, dto);
+
+        // Then
+        verify(sysUserMapper, times(1)).updateById(argThat((SysUser user) ->
+                "existing@example.com".equals(user.getEmail()) // Email unchanged
+        ));
+    }
+
+    @Test
+    @DisplayName("Should ignore empty email in update request")
+    void shouldIgnoreEmptyEmail() {
+        // Given
+        String userId = "2";
+        UpdateUserRequestDTO dto = new UpdateUserRequestDTO();
+        dto.setEmail("");
+
+        SysUser existingUser = TestDataFactory.createDefaultUser();
+        existingUser.setUserId(userId);
+        existingUser.setEmail("existing@example.com");
+
+        when(sysUserMapper.selectById(userId)).thenReturn(existingUser);
+        when(sysUserMapper.updateById(any(SysUser.class))).thenReturn(1);
+
+        // When
+        sysUserService.updateUser(userId, dto);
+
+        // Then
+        verify(sysUserMapper, times(1)).updateById(argThat((SysUser user) ->
+                "existing@example.com".equals(user.getEmail()) // Email unchanged
+        ));
     }
 }

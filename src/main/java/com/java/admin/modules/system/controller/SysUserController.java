@@ -3,6 +3,7 @@ package com.java.admin.modules.system.controller;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.java.admin.infrastructure.model.Result;
 import com.java.admin.modules.system.dto.CreateUserRequestDTO;
+import com.java.admin.modules.system.dto.UpdateUserRequestDTO;
 import com.java.admin.modules.system.model.SysUser;
 import com.java.admin.modules.system.service.SysUserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -98,6 +99,32 @@ public class SysUserController {
         log.info("Create user request - username={}, email={}", dto.getUsername(), dto.getEmail());
         sysUserService.createUser(dto);
         log.info("Create user success - user created successfully");
+        return Result.success();
+    }
+
+    /**
+     * Update user information (ADMIN or self)
+     * ADMIN can update any user
+     * Regular users can only update their own email
+     */
+    @PutMapping("/{id}")
+    @PreAuthorize("@perm.canAccess(authentication, #id)")
+    @Operation(summary = "Update user", description = "Update user information (ADMIN or self)")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "User updated successfully"),
+            @ApiResponse(responseCode = "400", description = "Bad request - validation failed or user not found"),
+            @ApiResponse(responseCode = "403", description = "Forbidden - not authorized"),
+            @ApiResponse(responseCode = "404", description = "User not found")
+    })
+    public Result<Void> updateUser(
+            @Parameter(description = "User ID")
+            @PathVariable String id,
+            @Parameter(description = "Update user request")
+            @Valid @RequestBody UpdateUserRequestDTO dto) {
+
+        log.info("Update user request - User ID: {}, Email: {}", id, dto.getEmail());
+        sysUserService.updateUser(id, dto);
+        log.info("Update user success - User ID: {}", id);
         return Result.success();
     }
 }
