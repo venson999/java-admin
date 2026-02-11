@@ -5,6 +5,8 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
 import com.java.admin.infrastructure.model.Result;
 import com.java.admin.testutil.InMemoryAppender;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.Signature;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -83,8 +85,8 @@ class ControllerLogAspectTest {
         mockedRequestContextHolder.when(RequestContextHolder::getRequestAttributes).thenReturn(attributes);
 
         // Mock ProceedingJoinPoint
-        org.aspectj.lang.ProceedingJoinPoint joinPoint = mock(org.aspectj.lang.ProceedingJoinPoint.class);
-        org.aspectj.lang.Signature signature = mock(org.aspectj.lang.Signature.class);
+        ProceedingJoinPoint joinPoint = mock(ProceedingJoinPoint.class);
+        Signature signature = mock(Signature.class);
         when(joinPoint.getSignature()).thenReturn(signature);
         when(signature.getDeclaringTypeName()).thenReturn("TestController");
         when(signature.getName()).thenReturn("testMethod");
@@ -114,8 +116,8 @@ class ControllerLogAspectTest {
         ServletRequestAttributes attributes = new ServletRequestAttributes(request);
         mockedRequestContextHolder.when(RequestContextHolder::getRequestAttributes).thenReturn(attributes);
 
-        org.aspectj.lang.ProceedingJoinPoint joinPoint = mock(org.aspectj.lang.ProceedingJoinPoint.class);
-        org.aspectj.lang.Signature signature = mock(org.aspectj.lang.Signature.class);
+        ProceedingJoinPoint joinPoint = mock(ProceedingJoinPoint.class);
+        Signature signature = mock(Signature.class);
         when(joinPoint.getSignature()).thenReturn(signature);
         when(signature.getDeclaringTypeName()).thenReturn("SlowController");
         when(signature.getName()).thenReturn("slowMethod");
@@ -147,8 +149,8 @@ class ControllerLogAspectTest {
         mockedRequestContextHolder.when(RequestContextHolder::getRequestAttributes).thenReturn(attributes);
 
         RuntimeException exception = new RuntimeException("Database error");
-        org.aspectj.lang.ProceedingJoinPoint joinPoint = mock(org.aspectj.lang.ProceedingJoinPoint.class);
-        org.aspectj.lang.Signature signature = mock(org.aspectj.lang.Signature.class);
+        ProceedingJoinPoint joinPoint = mock(ProceedingJoinPoint.class);
+        Signature signature = mock(Signature.class);
         when(joinPoint.getSignature()).thenReturn(signature);
         when(signature.getDeclaringTypeName()).thenReturn("ErrorController");
         when(signature.getName()).thenReturn("errorMethod");
@@ -172,7 +174,7 @@ class ControllerLogAspectTest {
         // Given
         mockedRequestContextHolder.when(RequestContextHolder::getRequestAttributes).thenReturn(null);
 
-        org.aspectj.lang.ProceedingJoinPoint joinPoint = mock(org.aspectj.lang.ProceedingJoinPoint.class);
+        ProceedingJoinPoint joinPoint = mock(ProceedingJoinPoint.class);
         when(joinPoint.proceed()).thenReturn(Result.success("Direct"));
 
         // When
@@ -196,8 +198,8 @@ class ControllerLogAspectTest {
         ServletRequestAttributes attributes = new ServletRequestAttributes(request);
         mockedRequestContextHolder.when(RequestContextHolder::getRequestAttributes).thenReturn(attributes);
 
-        org.aspectj.lang.ProceedingJoinPoint joinPoint = mock(org.aspectj.lang.ProceedingJoinPoint.class);
-        org.aspectj.lang.Signature signature = mock(org.aspectj.lang.Signature.class);
+        ProceedingJoinPoint joinPoint = mock(ProceedingJoinPoint.class);
+        Signature signature = mock(Signature.class);
         when(joinPoint.getSignature()).thenReturn(signature);
         when(signature.getDeclaringTypeName()).thenReturn("ArgsController");
         when(signature.getName()).thenReturn("methodWithArgs");
@@ -223,8 +225,8 @@ class ControllerLogAspectTest {
         ServletRequestAttributes attributes = new ServletRequestAttributes(request);
         mockedRequestContextHolder.when(RequestContextHolder::getRequestAttributes).thenReturn(attributes);
 
-        org.aspectj.lang.ProceedingJoinPoint joinPoint = mock(org.aspectj.lang.ProceedingJoinPoint.class);
-        org.aspectj.lang.Signature signature = mock(org.aspectj.lang.Signature.class);
+        ProceedingJoinPoint joinPoint = mock(ProceedingJoinPoint.class);
+        Signature signature = mock(Signature.class);
         when(joinPoint.getSignature()).thenReturn(signature);
         when(signature.getDeclaringTypeName()).thenReturn("TimingController");
         when(signature.getName()).thenReturn("timingMethod");
@@ -253,8 +255,8 @@ class ControllerLogAspectTest {
         ServletRequestAttributes attributes = new ServletRequestAttributes(request);
         mockedRequestContextHolder.when(RequestContextHolder::getRequestAttributes).thenReturn(attributes);
 
-        org.aspectj.lang.ProceedingJoinPoint joinPoint = mock(org.aspectj.lang.ProceedingJoinPoint.class);
-        org.aspectj.lang.Signature signature = mock(org.aspectj.lang.Signature.class);
+        ProceedingJoinPoint joinPoint = mock(ProceedingJoinPoint.class);
+        Signature signature = mock(Signature.class);
         when(joinPoint.getSignature()).thenReturn(signature);
         when(signature.getDeclaringTypeName()).thenReturn("NoArgsController");
         when(signature.getName()).thenReturn("noArgsMethod");
@@ -280,8 +282,8 @@ class ControllerLogAspectTest {
         mockedRequestContextHolder.when(RequestContextHolder::getRequestAttributes).thenReturn(attributes);
 
         NullPointerException npe = new NullPointerException("Null value");
-        org.aspectj.lang.ProceedingJoinPoint joinPoint = mock(org.aspectj.lang.ProceedingJoinPoint.class);
-        org.aspectj.lang.Signature signature = mock(org.aspectj.lang.Signature.class);
+        ProceedingJoinPoint joinPoint = mock(ProceedingJoinPoint.class);
+        Signature signature = mock(Signature.class);
         when(joinPoint.getSignature()).thenReturn(signature);
         when(signature.getDeclaringTypeName()).thenReturn("TestController");
         when(signature.getName()).thenReturn("testMethod");
@@ -311,8 +313,8 @@ class ControllerLogAspectTest {
             ServletRequestAttributes attributes = new ServletRequestAttributes(request);
             mockedRequestContextHolder.when(RequestContextHolder::getRequestAttributes).thenReturn(attributes);
 
-            org.aspectj.lang.ProceedingJoinPoint joinPoint = mock(org.aspectj.lang.ProceedingJoinPoint.class);
-            org.aspectj.lang.Signature signature = mock(org.aspectj.lang.Signature.class);
+            ProceedingJoinPoint joinPoint = mock(ProceedingJoinPoint.class);
+            Signature signature = mock(Signature.class);
             when(joinPoint.getSignature()).thenReturn(signature);
             when(signature.getDeclaringTypeName()).thenReturn("TestController");
             when(signature.getName()).thenReturn("testMethod");
@@ -339,8 +341,8 @@ class ControllerLogAspectTest {
         ServletRequestAttributes attributes = new ServletRequestAttributes(request);
         mockedRequestContextHolder.when(RequestContextHolder::getRequestAttributes).thenReturn(attributes);
 
-        org.aspectj.lang.ProceedingJoinPoint joinPoint = mock(org.aspectj.lang.ProceedingJoinPoint.class);
-        org.aspectj.lang.Signature signature = mock(org.aspectj.lang.Signature.class);
+        ProceedingJoinPoint joinPoint = mock(ProceedingJoinPoint.class);
+        Signature signature = mock(Signature.class);
         when(joinPoint.getSignature()).thenReturn(signature);
         when(signature.getDeclaringTypeName()).thenReturn("TestController");
         when(signature.getName()).thenReturn("testMethod");
@@ -367,8 +369,8 @@ class ControllerLogAspectTest {
         ServletRequestAttributes attributes = new ServletRequestAttributes(request);
         mockedRequestContextHolder.when(RequestContextHolder::getRequestAttributes).thenReturn(attributes);
 
-        org.aspectj.lang.ProceedingJoinPoint joinPoint = mock(org.aspectj.lang.ProceedingJoinPoint.class);
-        org.aspectj.lang.Signature signature = mock(org.aspectj.lang.Signature.class);
+        ProceedingJoinPoint joinPoint = mock(ProceedingJoinPoint.class);
+        Signature signature = mock(Signature.class);
         when(joinPoint.getSignature()).thenReturn(signature);
         when(signature.getDeclaringTypeName()).thenReturn("TestController");
         when(signature.getName()).thenReturn("searchMethod");
@@ -394,8 +396,8 @@ class ControllerLogAspectTest {
         ServletRequestAttributes attributes = new ServletRequestAttributes(request);
         mockedRequestContextHolder.when(RequestContextHolder::getRequestAttributes).thenReturn(attributes);
 
-        org.aspectj.lang.ProceedingJoinPoint joinPoint = mock(org.aspectj.lang.ProceedingJoinPoint.class);
-        org.aspectj.lang.Signature signature = mock(org.aspectj.lang.Signature.class);
+        ProceedingJoinPoint joinPoint = mock(ProceedingJoinPoint.class);
+        Signature signature = mock(Signature.class);
         when(joinPoint.getSignature()).thenReturn(signature);
         when(signature.getDeclaringTypeName()).thenReturn("TestController");
         when(signature.getName()).thenReturn("testMethod");
@@ -420,8 +422,8 @@ class ControllerLogAspectTest {
         ServletRequestAttributes attributes = new ServletRequestAttributes(request);
         mockedRequestContextHolder.when(RequestContextHolder::getRequestAttributes).thenReturn(attributes);
 
-        org.aspectj.lang.ProceedingJoinPoint joinPoint = mock(org.aspectj.lang.ProceedingJoinPoint.class);
-        org.aspectj.lang.Signature signature = mock(org.aspectj.lang.Signature.class);
+        ProceedingJoinPoint joinPoint = mock(ProceedingJoinPoint.class);
+        Signature signature = mock(Signature.class);
         when(joinPoint.getSignature()).thenReturn(signature);
         when(signature.getDeclaringTypeName()).thenReturn("com.java.admin.modules.system.controller.SysUserController");
         when(signature.getName()).thenReturn("getUserInfo");
@@ -448,8 +450,8 @@ class ControllerLogAspectTest {
         mockedRequestContextHolder.when(RequestContextHolder::getRequestAttributes).thenReturn(attributes);
 
         Result<String> expected = Result.success("test-data");
-        org.aspectj.lang.ProceedingJoinPoint joinPoint = mock(org.aspectj.lang.ProceedingJoinPoint.class);
-        org.aspectj.lang.Signature signature = mock(org.aspectj.lang.Signature.class);
+        ProceedingJoinPoint joinPoint = mock(ProceedingJoinPoint.class);
+        Signature signature = mock(Signature.class);
         when(joinPoint.getSignature()).thenReturn(signature);
         when(signature.getDeclaringTypeName()).thenReturn("TestController");
         when(signature.getName()).thenReturn("testMethod");

@@ -12,9 +12,13 @@ create table sys_user (
   created_by        varchar(32)     default null               comment '创建人',
   updated_by        varchar(32)     default null               comment '更新人',
   deleted           tinyint(1)      default 0                  comment '删除标记（0-正常，1-删除）',
-  primary key (user_id),
-  unique key uk_username (user_name)
+  primary key (user_id)
 ) engine=innodb comment = '用户信息表';
+
+-- 只对活跃用户建立唯一索引（deleted=0）
+-- 使用函数索引：deleted=0 时为 user_name，deleted=1 时为 NULL
+-- NULL 不参与唯一约束，因此允许多个已删除用户同名
+create unique index uk_username_active on sys_user((if(deleted = 0, user_name, null)));
 
 -- ----------------------------
 -- 初始化-用户信息表数据

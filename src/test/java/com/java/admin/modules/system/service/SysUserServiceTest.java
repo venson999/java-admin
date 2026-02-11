@@ -2,6 +2,8 @@ package com.java.admin.modules.system.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.java.admin.infrastructure.constants.ErrorCode;
+import com.java.admin.infrastructure.exception.AppException;
 import com.java.admin.modules.system.dto.CreateUserRequestDTO;
 import com.java.admin.modules.system.dto.UpdateUserRequestDTO;
 import com.java.admin.modules.system.mapper.SysUserMapper;
@@ -12,6 +14,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
@@ -464,7 +467,7 @@ class SysUserServiceTest extends AbstractMockTest {
 
         // When & Then
         assertThatThrownBy(() -> sysUserService.getUserById(userId))
-                .isInstanceOf(com.java.admin.infrastructure.exception.AppException.class)
+                .isInstanceOf(AppException.class)
                 .hasMessageContaining("User not found");
 
         verify(sysUserMapper, times(1)).selectById(userId);
@@ -479,7 +482,6 @@ class SysUserServiceTest extends AbstractMockTest {
         dto.setPassword("password123");
         dto.setEmail("newuser@example.com");
 
-        when(sysUserMapper.selectCount(any())).thenReturn(0L);
         when(passwordEncoder.encode("password123")).thenReturn("$2a$10$encoded");
         when(sysUserMapper.insert(any(SysUser.class))).thenAnswer(invocation -> {
             SysUser user = invocation.getArgument(0);
@@ -491,7 +493,6 @@ class SysUserServiceTest extends AbstractMockTest {
         sysUserService.createUser(dto);
 
         // Then
-        verify(sysUserMapper, times(1)).selectCount(any());
         verify(passwordEncoder, times(1)).encode("password123");
         verify(sysUserMapper, times(1)).insert(any(SysUser.class));
     }
@@ -505,7 +506,6 @@ class SysUserServiceTest extends AbstractMockTest {
         dto.setPassword("password123");
         dto.setEmail("newuser@example.com");
 
-        when(sysUserMapper.selectCount(any())).thenReturn(0L);
         when(passwordEncoder.encode("password123")).thenReturn("$2a$10$encoded");
         when(sysUserMapper.insert(any(SysUser.class))).thenAnswer(invocation -> {
             SysUser user = invocation.getArgument(0);
@@ -529,14 +529,19 @@ class SysUserServiceTest extends AbstractMockTest {
         dto.setPassword("password123");
         dto.setEmail("existing@example.com");
 
-        when(sysUserMapper.selectCount(any())).thenReturn(1L);
+        when(passwordEncoder.encode("password123")).thenReturn("$2a$10$encoded");
+        when(sysUserMapper.insert(any(SysUser.class)))
+                .thenThrow(new DuplicateKeyException("Duplicate entry for key 'uk_username_active'"));
 
         // When & Then
         assertThatThrownBy(() -> sysUserService.createUser(dto))
-                .isInstanceOf(com.java.admin.infrastructure.exception.AppException.class);
+                .isInstanceOf(AppException.class)
+                .satisfies(e -> {
+                    AppException ex = (AppException) e;
+                    assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.USERNAME_ALREADY_EXISTS);
+                });
 
-        verify(sysUserMapper, times(1)).selectCount(any());
-        verify(sysUserMapper, never()).insert(any(SysUser.class));
+        verify(sysUserMapper, times(1)).insert(any(SysUser.class));
     }
 
     @Test
@@ -548,7 +553,6 @@ class SysUserServiceTest extends AbstractMockTest {
         dto.setPassword("plainpassword");
         dto.setEmail("newuser@example.com");
 
-        when(sysUserMapper.selectCount(any())).thenReturn(0L);
         when(passwordEncoder.encode("plainpassword")).thenReturn("$2a$10$encodedpassword");
         when(sysUserMapper.insert(any(SysUser.class))).thenAnswer(invocation -> {
             SysUser user = invocation.getArgument(0);
@@ -567,22 +571,22 @@ class SysUserServiceTest extends AbstractMockTest {
     }
 
     @Test
-    @DisplayName("Should throw exception when database insert fails")
-    void shouldThrowExceptionWhenInsertFails() {
+    @DisplayName("Should propagate database exception during insert")
+    void shouldPropagateExceptionDuringInsert() {
         // Given
         CreateUserRequestDTO dto = new CreateUserRequestDTO();
         dto.setUsername("newuser");
         dto.setPassword("password123");
         dto.setEmail("newuser@example.com");
 
-        when(sysUserMapper.selectCount(any())).thenReturn(0L);
         when(passwordEncoder.encode("password123")).thenReturn("$2a$10$encoded");
-        when(sysUserMapper.insert(any(SysUser.class))).thenReturn(0);
+        when(sysUserMapper.insert(any(SysUser.class)))
+                .thenThrow(new RuntimeException("Database connection failed"));
 
         // When & Then
         assertThatThrownBy(() -> sysUserService.createUser(dto))
-                .isInstanceOf(com.java.admin.infrastructure.exception.AppException.class)
-                .hasMessageContaining("Failed to create user");
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Database connection failed");
 
         verify(sysUserMapper, times(1)).insert(any(SysUser.class));
     }
@@ -624,7 +628,7 @@ class SysUserServiceTest extends AbstractMockTest {
 
         // When & Then
         assertThatThrownBy(() -> sysUserService.updateUser(userId, dto))
-                .isInstanceOf(com.java.admin.infrastructure.exception.AppException.class)
+                .isInstanceOf(AppException.class)
                 .hasMessageContaining("User not found");
 
         verify(sysUserMapper, times(1)).selectById(userId);
@@ -647,7 +651,7 @@ class SysUserServiceTest extends AbstractMockTest {
 
         // When & Then
         assertThatThrownBy(() -> sysUserService.updateUser(userId, dto))
-                .isInstanceOf(com.java.admin.infrastructure.exception.AppException.class)
+                .isInstanceOf(AppException.class)
                 .hasMessageContaining("Failed to update user");
 
         verify(sysUserMapper, times(1)).updateById(any(SysUser.class));
@@ -732,11 +736,10 @@ class SysUserServiceTest extends AbstractMockTest {
 
         // When & Then
         assertThatThrownBy(() -> sysUserService.deleteUser(userId, currentUserId))
-                .isInstanceOf(com.java.admin.infrastructure.exception.AppException.class)
+                .isInstanceOf(AppException.class)
                 .satisfies(e -> {
-                    com.java.admin.infrastructure.exception.AppException ex =
-                            (com.java.admin.infrastructure.exception.AppException) e;
-                    assertThat(ex.getErrorCode()).isEqualTo(com.java.admin.infrastructure.constants.ErrorCode.CANNOT_DELETE_YOURSELF);
+                    AppException ex = (AppException) e;
+                    assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.CANNOT_DELETE_YOURSELF);
                 });
 
         verify(sysUserMapper, never()).deleteById((String) any());
@@ -753,7 +756,7 @@ class SysUserServiceTest extends AbstractMockTest {
 
         // When & Then
         assertThatThrownBy(() -> sysUserService.deleteUser(userId, currentUserId))
-                .isInstanceOf(com.java.admin.infrastructure.exception.AppException.class)
+                .isInstanceOf(AppException.class)
                 .hasMessageContaining("User not found");
 
         verify(sysUserMapper, times(1)).selectById(userId);
@@ -774,7 +777,7 @@ class SysUserServiceTest extends AbstractMockTest {
 
         // When & Then
         assertThatThrownBy(() -> sysUserService.deleteUser(userId, currentUserId))
-                .isInstanceOf(com.java.admin.infrastructure.exception.AppException.class)
+                .isInstanceOf(AppException.class)
                 .hasMessageContaining("Failed to delete user");
 
         verify(sysUserMapper, times(1)).deleteById((String) any());
@@ -808,7 +811,7 @@ class SysUserServiceTest extends AbstractMockTest {
 
         // When & Then - Different IDs should not throw exception
         assertThatThrownBy(() -> sysUserService.deleteUser(userId, userId))
-                .isInstanceOf(com.java.admin.infrastructure.exception.AppException.class);
+                .isInstanceOf(AppException.class);
 
         // Different IDs should proceed
         SysUser existingUser = TestDataFactory.createDefaultUser();
