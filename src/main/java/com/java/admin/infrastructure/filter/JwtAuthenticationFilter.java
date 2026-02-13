@@ -34,10 +34,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        String requestURI = request.getRequestURI();
+        // Use getServletPath() to get path without context-path, consistent with Spring Security
+        String servletPath = request.getServletPath();
         // Skip authentication for configured paths
         return authProperties.getSkipPaths().stream()
-                .anyMatch(skipPath -> pathMatcher.match(skipPath, requestURI));
+                .anyMatch(skipPath -> pathMatcher.match(skipPath, servletPath));
     }
 
     @Override

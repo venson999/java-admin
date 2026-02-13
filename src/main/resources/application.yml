@@ -27,6 +27,8 @@ logging:
 
 server:
   port: 8000
+  servlet:
+    context-path: /api
 
 auth:
   skip-paths: /login,/swagger-ui/index.html,/swagger-ui/**,/v3/api-docs/**

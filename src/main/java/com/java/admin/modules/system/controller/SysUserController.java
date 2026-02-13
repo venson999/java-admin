@@ -20,7 +20,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/users")
+@RequestMapping("/users")
 @Tag(name = "User", description = "User management APIs")
 @RequiredArgsConstructor
 @Slf4j
