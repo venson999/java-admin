@@ -170,8 +170,8 @@ class JwtAuthenticationFilterTest extends AbstractMockTest {
     }
 
     @Test
-    @DisplayName("Should successfully handle valid token")
-    void shouldHandleValidTokenSuccessfully() throws ServletException, IOException {
+    @DisplayName("Should allow request when token is valid")
+    void shouldAllowRequestWhenTokenValid() throws ServletException, IOException {
         // Given
         SecurityUserDetails userDetails = TestDataFactory.createSecurityUserDetails(TEST_USER_ID);
         userDetails.setCurrentTokenFingerprint(TOKEN_FINGERPRINT);
@@ -398,8 +398,8 @@ class JwtAuthenticationFilterTest extends AbstractMockTest {
     }
 
     @Test
-    @DisplayName("Should handle URI with special characters")
-    void shouldHandleUriWithSpecialCharacters() throws ServletException, IOException {
+    @DisplayName("Should return TOKEN_MISSING error when token is missing from request with special URI")
+    void shouldReturnTokenMissingWhenTokenMissingFromRequestWithSpecialUri() throws ServletException, IOException {
         // Given
         String specialUri = "/api/test?param=value&other=123";
         when(request.getRequestURI()).thenReturn(specialUri);
@@ -417,8 +417,8 @@ class JwtAuthenticationFilterTest extends AbstractMockTest {
     }
 
     @Test
-    @DisplayName("Should handle multiple consecutive requests")
-    void shouldHandleMultipleRequests() throws ServletException, IOException {
+    @DisplayName("Should allow all requests when multiple consecutive requests have valid tokens")
+    void shouldAllowAllRequestsWhenMultipleConsecutiveRequestsHaveValidTokens() throws ServletException, IOException {
         // Given
         SecurityUserDetails userDetails = TestDataFactory.createSecurityUserDetails(TEST_USER_ID);
         userDetails.setCurrentTokenFingerprint(TOKEN_FINGERPRINT);
@@ -442,8 +442,8 @@ class JwtAuthenticationFilterTest extends AbstractMockTest {
     }
 
     @Test
-    @DisplayName("Should handle token with spaces")
-    void shouldHandleTokenWithSpaces() throws ServletException, IOException {
+    @DisplayName("Should return TOKEN_INVALID error when token contains spaces")
+    void shouldReturnTokenInvalidWhenTokenContainsSpaces() throws ServletException, IOException {
         // Given
         String tokenWithSpaces = " token-with-spaces ";
         when(request.getRequestURI()).thenReturn(TEST_URI);

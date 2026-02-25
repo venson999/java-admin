@@ -82,8 +82,8 @@ class SysLoginServiceTest extends AbstractMockTest {
     }
 
     @Test
-    @DisplayName("Should successfully login and return token")
-    void shouldReturnTokenWhenLoginSuccessful() {
+    @DisplayName("Should return token when credentials are valid")
+    void shouldReturnTokenWhenCredentialsValid() {
         // Given
         String username = "test-user-name";
         String password = "password";
@@ -111,8 +111,8 @@ class SysLoginServiceTest extends AbstractMockTest {
     }
 
     @Test
-    @DisplayName("Should return null when authentication fails")
-    void shouldReturnNullWhenAuthenticationFails() {
+    @DisplayName("Should return null when credentials are invalid")
+    void shouldReturnNullWhenCredentialsInvalid() {
         // Given
         String username = "wronguser";
         String password = "wrongpass";
@@ -132,8 +132,8 @@ class SysLoginServiceTest extends AbstractMockTest {
     }
 
     @Test
-    @DisplayName("Should return null when authentication exception is thrown")
-    void shouldReturnNullWhenAuthenticationExceptionThrown() {
+    @DisplayName("Should throw exception when authentication throws exception")
+    void shouldThrowExceptionWhenAuthenticationThrowsException() {
         // Given
         String username = "test-user-name";
         String password = "wrongpass";
@@ -151,8 +151,8 @@ class SysLoginServiceTest extends AbstractMockTest {
     }
 
     @Test
-    @DisplayName("Should correctly set token fingerprint")
-    void shouldSetTokenFingerprintCorrectly() {
+    @DisplayName("Should set token fingerprint when user logs in successfully")
+    void shouldSetTokenFingerprintWhenUserLogsInSuccessfully() {
         // Given
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenReturn(authentication);
@@ -172,8 +172,8 @@ class SysLoginServiceTest extends AbstractMockTest {
     }
 
     @Test
-    @DisplayName("Should save user session")
-    void shouldSaveUserSession() {
+    @DisplayName("Should save user session when login is successful")
+    void shouldSaveUserSessionWhenLoginSuccessful() {
         // Given
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenReturn(authentication);
@@ -193,8 +193,8 @@ class SysLoginServiceTest extends AbstractMockTest {
     }
 
     @Test
-    @DisplayName("Should successfully revoke user session")
-    void shouldRevokeUserSessionSuccessfully() {
+    @DisplayName("Should revoke user session when revoke is called")
+    void shouldRevokeUserSessionWhenRevokeCalled() {
         // Given
         String userId = "test-user-id";
 
@@ -206,8 +206,8 @@ class SysLoginServiceTest extends AbstractMockTest {
     }
 
     @Test
-    @DisplayName("Should be able to revoke any user session")
-    void shouldRevokeAnyUserSession() {
+    @DisplayName("Should revoke any user session when user ID is provided")
+    void shouldRevokeAnyUserSessionWhenUserIdProvided() {
         // Given
         String userId = "another-user-id";
 
@@ -219,8 +219,8 @@ class SysLoginServiceTest extends AbstractMockTest {
     }
 
     @Test
-    @DisplayName("Should handle empty user ID")
-    void shouldHandleEmptyUserId() {
+    @DisplayName("Should revoke session when user ID is empty")
+    void shouldRevokeSessionWhenUserIdIsEmpty() {
         // Given
         String emptyUserId = "";
 
@@ -232,8 +232,8 @@ class SysLoginServiceTest extends AbstractMockTest {
     }
 
     @Test
-    @DisplayName("Should handle null username")
-    void shouldHandleNullUsername() {
+    @DisplayName("Should throw exception when username is null")
+    void shouldThrowExceptionWhenUsernameNull() {
         // Given
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenThrow(new org.springframework.security.authentication.BadCredentialsException("Username cannot be null"));
@@ -244,8 +244,8 @@ class SysLoginServiceTest extends AbstractMockTest {
     }
 
     @Test
-    @DisplayName("Should handle null password")
-    void shouldHandleNullPassword() {
+    @DisplayName("Should throw exception when password is null")
+    void shouldThrowExceptionWhenPasswordNull() {
         // Given
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenThrow(new org.springframework.security.authentication.BadCredentialsException("Password cannot be null"));
@@ -256,8 +256,8 @@ class SysLoginServiceTest extends AbstractMockTest {
     }
 
     @Test
-    @DisplayName("Should handle empty username")
-    void shouldHandleEmptyUsername() {
+    @DisplayName("Should throw exception when username is empty")
+    void shouldThrowExceptionWhenUsernameEmpty() {
         // Given
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenThrow(new org.springframework.security.authentication.BadCredentialsException("Empty username"));
@@ -268,8 +268,8 @@ class SysLoginServiceTest extends AbstractMockTest {
     }
 
     @Test
-    @DisplayName("Should handle empty password")
-    void shouldHandleEmptyPassword() {
+    @DisplayName("Should throw exception when password is empty")
+    void shouldThrowExceptionWhenPasswordEmpty() {
         // Given
         when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .thenThrow(new org.springframework.security.authentication.BadCredentialsException("Empty password"));
@@ -280,8 +280,8 @@ class SysLoginServiceTest extends AbstractMockTest {
     }
 
     @Test
-    @DisplayName("Should use configured token expiration time")
-    void shouldUseConfiguredTokenExpireTime() {
+    @DisplayName("Should use configured token expiration time when creating token")
+    void shouldUseConfiguredTokenExpireTimeWhenCreatingToken() {
         // Given
         long customExpireTime = 7200000L; // 2 hours
         when(authProperties.getAccessExpireMillis()).thenReturn(customExpireTime);
@@ -304,7 +304,7 @@ class SysLoginServiceTest extends AbstractMockTest {
 
     @Test
     @DisplayName("Should support multiple users logging in simultaneously")
-    void shouldSupportMultipleUsersLogin() {
+    void shouldSupportMultipleUsersWhenLoggingInSimultaneously() {
         // Given
         SecurityUserDetails user1 = TestDataFactory.createSecurityUserDetails("user-1");
         SecurityUserDetails user2 = TestDataFactory.createSecurityUserDetails("user-2");
@@ -332,8 +332,8 @@ class SysLoginServiceTest extends AbstractMockTest {
     }
 
     @Test
-    @DisplayName("Should log login attempt when user tries to login")
-    void shouldLogLoginAttemptWhenUserTriesToLogin() {
+    @DisplayName("Should log login attempt when user attempts login")
+    void shouldLogLoginAttemptWhenUserAttemptsLogin() {
         // Given - Setup logger capture
         InMemoryAppender appender = new InMemoryAppender();
         appender.setContext((ch.qos.logback.classic.LoggerContext) LoggerFactory.getILoggerFactory());
@@ -366,8 +366,8 @@ class SysLoginServiceTest extends AbstractMockTest {
     }
 
     @Test
-    @DisplayName("Should log successful login with user details and token fingerprint")
-    void shouldLogSuccessfulLoginWithUserDetailsAndTokenFingerprint() {
+    @DisplayName("Should log successful login operation with user details and token fingerprint")
+    void shouldLogSuccessfulLoginOperationWhenCredentialsValid() {
         // Given - Setup logger capture
         InMemoryAppender appender = new InMemoryAppender();
         appender.setContext((ch.qos.logback.classic.LoggerContext) LoggerFactory.getILoggerFactory());
@@ -405,8 +405,8 @@ class SysLoginServiceTest extends AbstractMockTest {
     }
 
     @Test
-    @DisplayName("Should log session revocation operation")
-    void shouldLogSessionRevocationWhenUserIsRevoked() {
+    @DisplayName("Should log session revocation operation when revoke is called")
+    void shouldLogSessionRevocationWhenRevokeCalled() {
         // Given - Setup logger capture
         InMemoryAppender appender = new InMemoryAppender();
         appender.setContext((ch.qos.logback.classic.LoggerContext) LoggerFactory.getILoggerFactory());
