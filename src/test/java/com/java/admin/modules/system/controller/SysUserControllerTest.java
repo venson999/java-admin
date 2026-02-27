@@ -1,9 +1,12 @@
 package com.java.admin.modules.system.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.java.admin.infrastructure.constants.ErrorCode;
+import com.java.admin.infrastructure.exception.AppException;
 import com.java.admin.infrastructure.model.Result;
 import com.java.admin.infrastructure.model.SecurityUserDetails;
 import com.java.admin.modules.system.dto.CreateUserRequestDTO;
+import com.java.admin.modules.system.dto.DeleteUsersRequestDTO;
 import com.java.admin.modules.system.dto.UpdateUserRequestDTO;
 import com.java.admin.modules.system.model.SysUser;
 import com.java.admin.modules.system.service.SysUserService;
@@ -17,6 +20,7 @@ import org.springframework.security.core.Authentication;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
@@ -661,6 +665,173 @@ class SysUserControllerTest extends AbstractMockTest {
         assertThat(result).isNotNull();
         assertThat(result.getCode()).isEqualTo("200");
         assertThat(result.getData()).isNull();
+    }
+
+    // ========== Batch Delete Users Tests ==========
+
+    @Test
+    @DisplayName("Should batch delete users successfully and return count")
+    void shouldBatchDeleteUsersSuccessfully() {
+        // Given
+        List<String> userIds = List.of("2", "3", "4");
+        String currentUserId = "1";
+        DeleteUsersRequestDTO dto = new DeleteUsersRequestDTO();
+        dto.setIds(userIds);
+
+        Authentication authentication = mock(Authentication.class);
+        SysUser currentUser = TestDataFactory.createDefaultUser();
+        currentUser.setUserId(currentUserId);
+        SecurityUserDetails userDetails = new SecurityUserDetails(currentUser, List.of("ROLE_ADMIN"));
+        when(authentication.getPrincipal()).thenReturn(userDetails);
+
+        when(sysUserService.deleteUsers(userIds, currentUserId)).thenReturn(3);
+
+        // When
+        Result<Integer> result = controller().deleteUsers(dto, authentication);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getCode()).isEqualTo("200");
+        assertThat(result.getData()).isEqualTo(3);
+
+        verify(sysUserService).deleteUsers(userIds, currentUserId);
+    }
+
+    @Test
+    @DisplayName("Should throw exception when batch delete contains self")
+    void shouldThrowExceptionWhenBatchDeleteContainsSelf() {
+        // Given
+        List<String> userIds = List.of("2", "1", "3");
+        String currentUserId = "1";
+        DeleteUsersRequestDTO dto = new DeleteUsersRequestDTO();
+        dto.setIds(userIds);
+
+        Authentication authentication = mock(Authentication.class);
+        SysUser currentUser = TestDataFactory.createDefaultUser();
+        currentUser.setUserId(currentUserId);
+        SecurityUserDetails userDetails = new SecurityUserDetails(currentUser, List.of("ROLE_ADMIN"));
+        when(authentication.getPrincipal()).thenReturn(userDetails);
+
+        when(sysUserService.deleteUsers(userIds, currentUserId))
+                .thenThrow(new AppException(com.java.admin.infrastructure.constants.ErrorCode.CANNOT_DELETE_YOURSELF));
+
+        // When & Then
+        assertThatThrownBy(() -> controller().deleteUsers(dto, authentication))
+                .isInstanceOf(AppException.class)
+                .satisfies(e -> {
+                    AppException ex = (AppException) e;
+                    assertThat(ex.getErrorCode()).isEqualTo(com.java.admin.infrastructure.constants.ErrorCode.CANNOT_DELETE_YOURSELF);
+                });
+
+        verify(sysUserService).deleteUsers(userIds, currentUserId);
+    }
+
+    @Test
+    @DisplayName("Should throw exception when some users not found in batch")
+    void shouldThrowExceptionWhenUsersNotFoundInBatch() {
+        // Given
+        List<String> userIds = List.of("2", "9999", "3");
+        String currentUserId = "1";
+        DeleteUsersRequestDTO dto = new DeleteUsersRequestDTO();
+        dto.setIds(userIds);
+
+        Authentication authentication = mock(Authentication.class);
+        SysUser currentUser = TestDataFactory.createDefaultUser();
+        currentUser.setUserId(currentUserId);
+        SecurityUserDetails userDetails = new SecurityUserDetails(currentUser, List.of("ROLE_ADMIN"));
+        when(authentication.getPrincipal()).thenReturn(userDetails);
+
+        when(sysUserService.deleteUsers(userIds, currentUserId))
+                .thenThrow(new AppException(ErrorCode.DATA_NOT_FOUND, "User not found"));
+
+        // When & Then
+        assertThatThrownBy(() -> controller().deleteUsers(dto, authentication))
+                .isInstanceOf(AppException.class)
+                .satisfies(e -> {
+                    AppException ex = (AppException) e;
+                    assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.DATA_NOT_FOUND);
+                });
+
+        verify(sysUserService).deleteUsers(userIds, currentUserId);
+    }
+
+    @Test
+    @DisplayName("Should handle single user in batch delete")
+    void shouldHandleSingleUserInBatchDelete() {
+        // Given
+        List<String> userIds = List.of("2");
+        String currentUserId = "1";
+        DeleteUsersRequestDTO dto = new DeleteUsersRequestDTO();
+        dto.setIds(userIds);
+
+        Authentication authentication = mock(Authentication.class);
+        SysUser currentUser = TestDataFactory.createDefaultUser();
+        currentUser.setUserId(currentUserId);
+        SecurityUserDetails userDetails = new SecurityUserDetails(currentUser, List.of("ROLE_ADMIN"));
+        when(authentication.getPrincipal()).thenReturn(userDetails);
+
+        when(sysUserService.deleteUsers(userIds, currentUserId)).thenReturn(1);
+
+        // When
+        Result<Integer> result = controller().deleteUsers(dto, authentication);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getCode()).isEqualTo("200");
+        assertThat(result.getData()).isEqualTo(1);
+
+        verify(sysUserService).deleteUsers(userIds, currentUserId);
+    }
+
+    @Test
+    @DisplayName("Should pass current user ID from authentication to service")
+    void shouldPassCurrentUserIdToService() {
+        // Given
+        List<String> userIds = List.of("2", "3");
+        String currentUserId = "admin123";
+        DeleteUsersRequestDTO dto = new DeleteUsersRequestDTO();
+        dto.setIds(userIds);
+
+        Authentication authentication = mock(Authentication.class);
+        SysUser currentUser = TestDataFactory.createDefaultUser();
+        currentUser.setUserId(currentUserId);
+        SecurityUserDetails userDetails = new SecurityUserDetails(currentUser, List.of("ROLE_ADMIN"));
+        when(authentication.getPrincipal()).thenReturn(userDetails);
+
+        when(sysUserService.deleteUsers(any(), eq(currentUserId))).thenReturn(2);
+
+        // When
+        controller().deleteUsers(dto, authentication);
+
+        // Then
+        verify(sysUserService).deleteUsers(eq(userIds), eq(currentUserId));
+    }
+
+    @Test
+    @DisplayName("Should return success result after batch delete")
+    void shouldReturnSuccessResultAfterBatchDelete() {
+        // Given
+        List<String> userIds = List.of("2", "3", "4");
+        String currentUserId = "1";
+        DeleteUsersRequestDTO dto = new DeleteUsersRequestDTO();
+        dto.setIds(userIds);
+
+        Authentication authentication = mock(Authentication.class);
+        SysUser currentUser = TestDataFactory.createDefaultUser();
+        currentUser.setUserId(currentUserId);
+        SecurityUserDetails userDetails = new SecurityUserDetails(currentUser, List.of("ROLE_ADMIN"));
+        when(authentication.getPrincipal()).thenReturn(userDetails);
+
+        when(sysUserService.deleteUsers(userIds, currentUserId)).thenReturn(3);
+
+        // When
+        Result<Integer> result = controller().deleteUsers(dto, authentication);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getCode()).isEqualTo("200");
+        assertThat(result.getData()).isEqualTo(3);
+        assertThat(result.getMsg()).isNull();
     }
 
     // Note: Tests for delete user permission control (@PreAuthorize "hasRole('ADMIN')") require integration testing with Spring Security

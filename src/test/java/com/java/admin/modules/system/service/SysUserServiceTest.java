@@ -19,6 +19,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -717,14 +718,14 @@ class SysUserServiceTest extends AbstractMockTest {
         existingUser.setUserId(userId);
 
         when(sysUserMapper.selectById(userId)).thenReturn(existingUser);
-        when(sysUserMapper.deleteById((String) any())).thenReturn(1);
+        when(sysUserMapper.deleteByIds(Collections.singletonList(userId))).thenReturn(1);
 
         // When
         sysUserService.deleteUser(userId, currentUserId);
 
         // Then
         verify(sysUserMapper, times(1)).selectById(userId);
-        verify(sysUserMapper, times(1)).deleteById((String) any());
+        verify(sysUserMapper, times(1)).deleteByIds(Collections.singletonList(userId));
     }
 
     @Test
@@ -742,7 +743,7 @@ class SysUserServiceTest extends AbstractMockTest {
                     assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.CANNOT_DELETE_YOURSELF);
                 });
 
-        verify(sysUserMapper, never()).deleteById((String) any());
+        verify(sysUserMapper, never()).deleteByIds(any());
     }
 
     @Test
@@ -760,7 +761,7 @@ class SysUserServiceTest extends AbstractMockTest {
                 .hasMessageContaining("User not found");
 
         verify(sysUserMapper, times(1)).selectById(userId);
-        verify(sysUserMapper, never()).deleteById((String) any());
+        verify(sysUserMapper, never()).deleteByIds(any());
     }
 
     @Test
@@ -773,14 +774,14 @@ class SysUserServiceTest extends AbstractMockTest {
         existingUser.setUserId(userId);
 
         when(sysUserMapper.selectById(userId)).thenReturn(existingUser);
-        when(sysUserMapper.deleteById((String) any())).thenReturn(0);
+        when(sysUserMapper.deleteByIds(Collections.singletonList(userId))).thenReturn(0);
 
         // When & Then
         assertThatThrownBy(() -> sysUserService.deleteUser(userId, currentUserId))
                 .isInstanceOf(AppException.class)
                 .hasMessageContaining("Failed to delete user");
 
-        verify(sysUserMapper, times(1)).deleteById((String) any());
+        verify(sysUserMapper, times(1)).deleteByIds(Collections.singletonList(userId));
     }
 
     @Test
@@ -793,13 +794,13 @@ class SysUserServiceTest extends AbstractMockTest {
         targetUser.setUserId(targetUserId);
 
         when(sysUserMapper.selectById(targetUserId)).thenReturn(targetUser);
-        when(sysUserMapper.deleteById((String) any())).thenReturn(1);
+        when(sysUserMapper.deleteByIds(Collections.singletonList(targetUserId))).thenReturn(1);
 
         // When
         sysUserService.deleteUser(targetUserId, adminUserId);
 
         // Then
-        verify(sysUserMapper, times(1)).deleteById((String) any());
+        verify(sysUserMapper, times(1)).deleteByIds(Collections.singletonList(targetUserId));
     }
 
     @Test
@@ -817,9 +818,142 @@ class SysUserServiceTest extends AbstractMockTest {
         SysUser existingUser = TestDataFactory.createDefaultUser();
         existingUser.setUserId(userId);
         when(sysUserMapper.selectById(userId)).thenReturn(existingUser);
-        when(sysUserMapper.deleteById((String) any())).thenReturn(1);
+        when(sysUserMapper.deleteByIds(Collections.singletonList(userId))).thenReturn(1);
 
         sysUserService.deleteUser(userId, differentUserId);
-        verify(sysUserMapper, times(1)).deleteById((String) any());
+        verify(sysUserMapper, times(1)).deleteByIds(Collections.singletonList(userId));
+    }
+
+    // ========== Batch Delete Users Tests ==========
+
+    @Test
+    @DisplayName("Should batch delete users successfully")
+    void shouldBatchDeleteUsersSuccessfully() {
+        // Given
+        List<String> userIds = List.of("2", "3", "4");
+        String currentUserId = "1";
+        List<SysUser> existingUsers = List.of(
+                TestDataFactory.createUserWithUsername("user2"),
+                TestDataFactory.createUserWithUsername("user3"),
+                TestDataFactory.createUserWithUsername("user4")
+        );
+
+        when(sysUserMapper.selectByIds(userIds)).thenReturn(existingUsers);
+        when(sysUserMapper.deleteByIds(userIds)).thenReturn(3);
+
+        // When
+        int deletedCount = sysUserService.deleteUsers(userIds, currentUserId);
+
+        // Then
+        assertThat(deletedCount).isEqualTo(3);
+        verify(sysUserMapper, times(1)).selectByIds(userIds);
+        verify(sysUserMapper, times(1)).deleteByIds(userIds);
+    }
+
+    @Test
+    @DisplayName("Should throw exception when batch delete contains self")
+    void shouldThrowExceptionWhenBatchDeleteContainsSelf() {
+        // Given
+        List<String> userIds = List.of("2", "1", "3");
+        String currentUserId = "1";
+
+        // When & Then
+        assertThatThrownBy(() -> sysUserService.deleteUsers(userIds, currentUserId))
+                .isInstanceOf(AppException.class)
+                .satisfies(e -> {
+                    AppException ex = (AppException) e;
+                    assertThat(ex.getErrorCode()).isEqualTo(ErrorCode.CANNOT_DELETE_YOURSELF);
+                });
+
+        verify(sysUserMapper, never()).selectByIds(any());
+        verify(sysUserMapper, never()).deleteByIds(any());
+    }
+
+    @Test
+    @DisplayName("Should throw exception when some users not found in batch delete")
+    void shouldThrowExceptionWhenUsersNotFoundInBatch() {
+        // Given
+        List<String> userIds = List.of("2", "9999", "3");
+        String currentUserId = "1";
+        List<SysUser> existingUsers = List.of(
+                TestDataFactory.createUserWithUsername("user2"),
+                TestDataFactory.createUserWithUsername("user3")
+        );
+
+        when(sysUserMapper.selectByIds(userIds)).thenReturn(existingUsers);
+
+        // When & Then
+        assertThatThrownBy(() -> sysUserService.deleteUsers(userIds, currentUserId))
+                .isInstanceOf(AppException.class)
+                .hasMessageContaining("User not found");
+
+        verify(sysUserMapper, times(1)).selectByIds(userIds);
+        verify(sysUserMapper, never()).deleteByIds(any());
+    }
+
+    @Test
+    @DisplayName("Should throw exception when batch delete operation fails")
+    void shouldThrowExceptionWhenBatchDeleteFails() {
+        // Given
+        List<String> userIds = List.of("2", "3", "4");
+        String currentUserId = "1";
+        List<SysUser> existingUsers = List.of(
+                TestDataFactory.createUserWithUsername("user2"),
+                TestDataFactory.createUserWithUsername("user3"),
+                TestDataFactory.createUserWithUsername("user4")
+        );
+
+        when(sysUserMapper.selectByIds(userIds)).thenReturn(existingUsers);
+        when(sysUserMapper.deleteByIds(userIds)).thenReturn(2); // Only deleted 2 instead of 3
+
+        // When & Then
+        assertThatThrownBy(() -> sysUserService.deleteUsers(userIds, currentUserId))
+                .isInstanceOf(AppException.class)
+                .hasMessageContaining("Batch delete failed");
+
+        verify(sysUserMapper, times(1)).deleteByIds(userIds);
+    }
+
+    @Test
+    @DisplayName("Should handle single user in batch delete")
+    void shouldHandleSingleUserInBatchDelete() {
+        // Given
+        List<String> userIds = Collections.singletonList("2");
+        String currentUserId = "1";
+        SysUser existingUser = TestDataFactory.createUserWithUsername("user2");
+
+        when(sysUserMapper.selectByIds(userIds)).thenReturn(List.of(existingUser));
+        when(sysUserMapper.deleteByIds(userIds)).thenReturn(1);
+
+        // When
+        int deletedCount = sysUserService.deleteUsers(userIds, currentUserId);
+
+        // Then
+        assertThat(deletedCount).isEqualTo(1);
+        verify(sysUserMapper, times(1)).selectByIds(userIds);
+        verify(sysUserMapper, times(1)).deleteByIds(userIds);
+    }
+
+    @Test
+    @DisplayName("Should handle maximum batch size delete")
+    void shouldHandleMaximumBatchSizeDelete() {
+        // Given
+        List<String> userIds = java.util.stream.IntStream.range(0, 100)
+                .mapToObj(i -> "id" + i)
+                .toList();
+        String currentUserId = "999";
+        List<SysUser> existingUsers = userIds.stream()
+                .map(id -> TestDataFactory.createUserWithUsername("user" + id))
+                .toList();
+
+        when(sysUserMapper.selectByIds(userIds)).thenReturn(existingUsers);
+        when(sysUserMapper.deleteByIds(userIds)).thenReturn(100);
+
+        // When
+        int deletedCount = sysUserService.deleteUsers(userIds, currentUserId);
+
+        // Then
+        assertThat(deletedCount).isEqualTo(100);
+        verify(sysUserMapper, times(1)).deleteByIds(userIds);
     }
 }

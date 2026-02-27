@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.java.admin.infrastructure.model.Result;
 import com.java.admin.infrastructure.model.SecurityUserDetails;
 import com.java.admin.modules.system.dto.CreateUserRequestDTO;
+import com.java.admin.modules.system.dto.DeleteUsersRequestDTO;
 import com.java.admin.modules.system.dto.UpdateUserRequestDTO;
 import com.java.admin.modules.system.model.SysUser;
 import com.java.admin.modules.system.service.SysUserService;
@@ -146,5 +147,33 @@ public class SysUserController {
         sysUserService.deleteUser(id, currentUserId);
         log.info("Delete user success - User ID: {}", id);
         return Result.success();
+    }
+
+    /**
+     * Batch delete users (ADMIN only)
+     * Admin cannot include themselves in the batch
+     */
+    @DeleteMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Batch delete users", description = "Batch delete users (soft delete, ADMIN only)")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Users deleted successfully"),
+            @ApiResponse(responseCode = "400", description = "Bad request - cannot delete yourself, invalid IDs, or exceeds limit"),
+            @ApiResponse(responseCode = "403", description = "Forbidden - not an admin"),
+            @ApiResponse(responseCode = "404", description = "User not found")
+    })
+    public Result<Integer> deleteUsers(
+            @Parameter(description = "Batch delete request")
+            @Valid @RequestBody DeleteUsersRequestDTO dto,
+            Authentication authentication) {
+
+        // Get current user ID from authentication
+        SecurityUserDetails userDetails = (SecurityUserDetails) authentication.getPrincipal();
+        String currentUserId = userDetails.getUserid();
+
+        log.info("Batch delete users request - User IDs: {}, Current User ID: {}", dto.getIds(), currentUserId);
+        int deletedCount = sysUserService.deleteUsers(dto.getIds(), currentUserId);
+        log.info("Batch delete users success - Deleted: {} users", deletedCount);
+        return Result.success(deletedCount);
     }
 }

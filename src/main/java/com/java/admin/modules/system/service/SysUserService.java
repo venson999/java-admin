@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 @Service
@@ -181,14 +182,50 @@ public class SysUserService {
             throw new AppException(ErrorCode.DATA_NOT_FOUND, "User not found");
         }
 
-        // Soft delete using MyBatis Plus removeById (sets deleted=1 automatically)
-        int deleteResult = sysUserMapper.deleteById(userId);
+        // Soft delete using deleteByIds for consistency
+        int deleteResult = sysUserMapper.deleteByIds(java.util.Collections.singletonList(userId));
 
-        if (deleteResult <= 0) {
+        if (deleteResult != 1) {
             log.error("Failed to delete user - User ID: {}", userId);
             throw new AppException(ErrorCode.SYSTEM_ERROR, "Failed to delete user");
         }
 
         log.debug("Delete user completed - User ID: {}, Username: {}", userId, existingUser.getUserName());
+    }
+
+    /**
+     * Batch delete users (soft delete)
+     *
+     * @param userIds       List of user IDs to delete
+     * @param currentUserId Current user ID
+     * @return Number of users deleted
+     * @throws AppException if trying to delete self, users not found, or delete failed
+     */
+    @Transactional
+    public int deleteUsers(java.util.List<String> userIds, String currentUserId) {
+        log.debug("Batch delete users started - User IDs: {}, Current User ID: {}", userIds, currentUserId);
+
+        // 1. Check self-delete
+        if (userIds.contains(currentUserId)) {
+            log.warn("User attempted to delete themselves - User IDs: {}", userIds);
+            throw new AppException(ErrorCode.CANNOT_DELETE_YOURSELF);
+        }
+
+        // 2. Validate all users exist
+        java.util.List<SysUser> existingUsers = sysUserMapper.selectByIds(userIds);
+        if (existingUsers.size() != userIds.size()) {
+            log.warn("Some users not found for batch deletion - Requested: {}, Found: {}", userIds.size(), existingUsers.size());
+            throw new AppException(ErrorCode.DATA_NOT_FOUND, "User not found");
+        }
+
+        // 3. Execute batch delete
+        int result = sysUserMapper.deleteByIds(userIds);
+        if (result != userIds.size()) {
+            log.error("Batch delete failed - Expected: {}, Actual: {}", userIds.size(), result);
+            throw new AppException(ErrorCode.SYSTEM_ERROR, "Batch delete failed");
+        }
+
+        log.debug("Batch delete completed - Deleted: {} users", result);
+        return result;
     }
 }
