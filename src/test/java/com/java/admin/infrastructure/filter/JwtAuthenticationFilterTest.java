@@ -101,7 +101,7 @@ class JwtAuthenticationFilterTest extends AbstractMockTest {
     @DisplayName("Should skip configured paths")
     void shouldSkipConfiguredPaths() throws ServletException, IOException {
         // Given
-        when(request.getRequestURI()).thenReturn(SKIP_URI);
+        when(request.getServletPath()).thenReturn(SKIP_URI);
 
         // When - Use doFilter() instead of doFilterInternal() to test the complete filter behavior
         filter.doFilter(request, response, filterChain);
@@ -121,7 +121,7 @@ class JwtAuthenticationFilterTest extends AbstractMockTest {
         for (String uri : skipUris) {
             reset(request, response, filterChain);
             when(response.getWriter()).thenReturn(writer);
-            when(request.getRequestURI()).thenReturn(uri);
+            when(request.getServletPath()).thenReturn(uri);
 
             // When - Use doFilter() instead of doFilterInternal()
             filter.doFilter(request, response, filterChain);
